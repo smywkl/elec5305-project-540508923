@@ -1,0 +1,11 @@
+# Initial environment plan — versions will be pinned after implementation testing
+numpy
+scipy
+matplotlib
+soundfile
+librosa
+pyyaml
+torch
+torchaudio
+demucs
+streamlit

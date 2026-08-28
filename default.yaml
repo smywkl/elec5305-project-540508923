@@ -1,0 +1,24 @@
+project:
+  sample_rate: 44100
+  output_dir: outputs
+
+separation:
+  model: htdemucs
+  stems:
+    - vocals
+    - drums
+    - bass
+    - other
+
+spatialisation:
+  hrtf_dataset: CIPIC
+  default_azimuths:
+    vocals: 0
+    drums: 60
+    bass: -30
+    other: -60
+  block_duration_ms: 100
+  crossfade_duration_ms: 20
+
+mix:
+  peak_target: 0.95

@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Large/local datasets
+data/musdb18/
+data/cipic/
+data/demo_audio/
+
+# Generated audio/results
+outputs/*
+!outputs/.gitkeep
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
