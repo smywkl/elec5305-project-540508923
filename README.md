@@ -1,101 +1,134 @@
-# ELEC5305 Project — Deep Learning-Assisted Dynamic Binaural Music Spatialisation
+# ELEC5305 Project
+## Deep Learning-Assisted Dynamic Binaural Music Spatialisation
 
 ## Project Overview
 
-This project aims to transform ordinary stereo music into a dynamic binaural mix for headphone listening.
+This project aims to transform ordinary stereo music into a dynamic binaural listening experience for standard stereo headphones.
 
 The planned processing pipeline is:
 
-**Stereo music → Deep-learning source separation → Independent stems → HRTF/HRIR spatialisation → Dynamic source movement → Binaural mixing → Audio export / UI**
+**Stereo Music → Deep Learning Source Separation → Independent Music Stems → HRTF/HRIR Spatial Processing → Dynamic Binaural Mixing → Stereo Output**
 
-The main technical focus is the signal-processing stage rather than development of a new deep-learning architecture. A pretrained music source-separation model will be used, while HRTF/HRIR loading, convolution, dynamic positioning, interpolation/crossfading, multi-stem mixing and evaluation will be developed as the main project components.
+A pretrained deep-learning source-separation model will be used to separate the input music into stems such as vocals, drums, bass and other instruments. Each stem will then be spatialised independently using head-related transfer function (HRTF) and head-related impulse response (HRIR) processing.
+
+The main technical focus of the project is the implementation of the binaural signal-processing pipeline, including HRIR convolution, spatial position control, dynamic movement, interpolation or crossfading between HRTF positions, multi-stem mixing and quantitative evaluation.
+
+---
 
 ## Planned Features
 
-- Separate stereo music into vocals, drums, bass and other stems
-- Load public HRTF/HRIR data
-- Apply static binaural spatialisation to individual stems
-- Move selected stems dynamically around the listener
-- Interpolate/crossfade between neighbouring spatial positions
-- Mix stems into a final stereo binaural WAV
-- Analyse waveform, spectrum, spectrogram, ILD and ITD
-- Provide a lightweight UI for loading music and controlling source positions
+- Music source separation into vocals, drums, bass and other stems
+- Static HRTF-based binaural positioning
+- Dynamic movement of individual sound sources
+- HRIR interpolation and crossfading for smoother movement
+- Multi-stem binaural mixing
+- Gain control and clipping prevention
+- Stereo WAV export
+- Simple user interface for source-position control
+- Quantitative analysis using waveform, spectrum, spectrogram, ILD and ITD
+
+---
 
 ## Current Status
 
-Initial project structure created for the Week 4 project review.
+This repository currently contains the initial project structure and early implementation scaffolds.
 
-Current work:
-- Project scope and methodology defined
-- Source-separation module scaffold created
-- HRTF spatialisation module scaffold created
-- Dynamic spatialisation and evaluation modules planned
-- UI scaffold prepared
+Completed so far:
 
-The code in this repository is currently an **early project scaffold** and will be tested and expanded during the implementation stage.
+- Project topic and scope defined
+- Initial repository structure created
+- Source-separation module prepared
+- Static spatialisation module prepared
+- Evaluation functions for basic binaural analysis prepared
+- Dynamic spatialisation, HRTF handling and UI modules planned
 
-## Proposed Technology
+The current code is an early project scaffold and will be tested, expanded and refined during the implementation stage.
 
-- Python
-- PyTorch
-- Pretrained Demucs-based music source separation
-- NumPy / SciPy
-- librosa / soundfile
-- Public HRTF/HRIR datasets (initially CIPIC)
-- matplotlib
-- Streamlit or a similarly lightweight UI framework
-
-## Evaluation Plan
-
-Source separation:
-- SDR / SI-SDR where ground-truth stems are available
-- Spectrogram and waveform comparisons
-
-Binaural rendering:
-- Interaural Level Difference (ILD)
-- Interaural Time Difference (ITD)
-- Left/right spectrum and spectrogram comparison
-- Dynamic trajectory verification
-
-A small conventional stereo-panning comparison may be included as supporting analysis.
+---
 
 ## Repository Structure
 
 ```text
 elec5305-project-540508923/
-├── README.md
-├── requirements.txt
-├── configs/
-│   └── default.yaml
+├── config/
 ├── data/
-│   └── README.md
 ├── docs/
-│   └── architecture.md
-├── outputs/
-│   └── .gitkeep
+├── output/
 ├── src/
-│   ├── separate.py
-│   ├── hrtf.py
-│   ├── spatialize.py
-│   ├── dynamic_spatialize.py
-│   ├── mix.py
-│   └── evaluate.py
-└── ui/
-    └── app.py
+├── ui/
+├── .gitignore
+├── project_proposal.pdf
+├── README.md
+└── requirements.txt
 ```
+
+---
+
+## Main Technical Components
+
+1. Deep-learning music source separation
+2. HRTF/HRIR data loading and processing
+3. Static binaural spatialisation
+4. Dynamic source positioning
+5. HRIR interpolation and crossfading
+6. Multi-stem binaural mixing
+7. Audio evaluation using ILD, ITD and spectral analysis
+8. Lightweight user interface for demonstration
+
+---
+
+## Evaluation Plan
+
+The project will include both functional implementation and quantitative evaluation.
+
+### Source Separation
+
+- SDR / SI-SDR where reference stems are available
+- Waveform and spectrogram comparison
+
+### Binaural Spatialisation
+
+- Interaural Level Difference (ILD)
+- Interaural Time Difference (ITD)
+- Left/right waveform comparison
+- Frequency spectrum comparison
+- Spectrogram comparison
+- Dynamic trajectory verification
+
+A small comparison with conventional stereo panning may also be included as supporting analysis.
+
+---
+
+## Planned Data and Tools
+
+- Python
+- PyTorch
+- Demucs or a similar pretrained music source-separation model
+- MUSDB18 dataset
+- CIPIC HRTF/HRIR database
+- NumPy / SciPy
+- librosa / soundfile
+- matplotlib
+- A lightweight UI framework
+
+---
+
+## Project Proposal
+
+The current project proposal is available here:
+
+[Project Proposal](./project_proposal.pdf)
+
+---
 
 ## Planned Timeline
 
-- Weeks 3–5: literature review, dataset/model investigation
-- Week 6: source separation baseline
-- Week 7: source-separation evaluation
-- Week 8: static HRTF binaural rendering
-- Week 9: multi-stem mixing
-- Week 10: dynamic positioning and crossfading
-- Week 11: UI and quantitative evaluation
-- Week 12: optimisation and audio demonstrations
-- Week 13: final report and GitHub documentation
-
-## References
-
-Key references will include work on Demucs/source separation, the CIPIC HRTF database, binaural headphone synthesis, source-separation evaluation and the MUSDB18 dataset.
+- **Weeks 3–5:** Literature review and dataset investigation
+- **Week 6:** Source-separation implementation
+- **Week 7:** Source-separation evaluation
+- **Week 8:** Static HRTF binaural rendering
+- **Week 9:** Multi-stem spatial mixing
+- **Week 10:** Dynamic positioning and HRIR crossfading
+- **Week 11:** UI and quantitative evaluation
+- **Week 12:** Optimisation and audio demonstrations
+- **Week 13:** Final report and GitHub documentation
