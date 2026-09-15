@@ -17,3 +17,6 @@ outputs/*
 .DS_Store
 .vscode/
 .idea/
+
+# Repository-local Codex/agent skills
+/.agents/
