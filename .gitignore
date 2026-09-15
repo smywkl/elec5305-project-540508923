@@ -4,14 +4,14 @@ __pycache__/
 .venv/
 venv/
 
-# Large/local datasets
-data/musdb18/
-data/cipic/
-data/demo_audio/
-
-# Generated audio/results
-outputs/*
-!outputs/.gitkeep
+# Large/local datasets and model artifacts
+data/
+!data/README.md
+outputs/
+checkpoints/
+*.pth
+*.pt
+*.ckpt
 
 # OS/editor
 .DS_Store
