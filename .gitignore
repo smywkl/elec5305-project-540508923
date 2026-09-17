@@ -20,3 +20,6 @@ checkpoints/
 
 # Repository-local Codex/agent skills
 /.agents/
+
+# Local third-party training sources
+/.external/
