@@ -1,4 +1,4 @@
-"""Resumable Open-Unmix V3 vocals fine-tuning from official UMXHQ weights."""
+"""Resumable four-target Open-Unmix V3 fine-tuning from official UMXHQ weights."""
 
 from __future__ import annotations
 
@@ -22,6 +22,7 @@ from pipeline import (
     CHECKPOINT_SAMPLES,
     PROJECT_ROOT,
     REFERENCE_SONG,
+    SOURCES,
     SAMPLES_PER_EPOCH_EQUIVALENT,
     SEED,
     SPLIT_FILE,
@@ -33,10 +34,10 @@ from pipeline import (
     dataloader_worker_init,
     deterministic_validation_loss,
     epoch_indices,
-    hybrid_vocals_overlap_add,
+    hybrid_target_overlap_add,
     load_and_validate_split,
     load_hybrid_interferer_models,
-    load_pretrained_umxhq_vocals_model,
+    load_pretrained_umxhq_target_model,
     load_reference_audio,
     magnitude_mse,
     process_memory,
@@ -47,7 +48,7 @@ from pipeline import (
 )
 
 
-V3_OUTPUT = PROJECT_ROOT / "outputs" / "training" / "openunmix_v3" / "vocals"
+V3_ROOT = PROJECT_ROOT / "outputs" / "training" / "openunmix_v3"
 LEARNING_RATE = 1e-4
 LOG_FIELDS = [
     "optimizer_step",
@@ -63,11 +64,12 @@ LOG_FIELDS = [
 
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output-dir", type=Path, default=V3_OUTPUT)
+    parser.add_argument("--target", choices=SOURCES, default="vocals")
+    parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--workers", type=int, default=2)
-    parser.add_argument("--max-epoch-equivalents", type=float, default=3.0)
-    parser.add_argument("--max-wall-hours", type=float, default=2.0)
+    parser.add_argument("--max-epoch-equivalents", type=float, default=5.0)
+    parser.add_argument("--max-wall-hours", type=float, default=3.0)
     parser.add_argument("--resume", type=Path)
     parser.add_argument("--prepare-only", action="store_true")
     parser.add_argument("--max-updates", type=int, help="Absolute optimizer-step cap for engineering smoke only")
@@ -91,14 +93,15 @@ def tensor_sha256(value: torch.Tensor) -> str:
     return hashlib.sha256(array.tobytes()).hexdigest()
 
 
-def validate_pretrained_model(network: torch.nn.Module) -> dict:
+def validate_pretrained_model(network: torch.nn.Module, target: str = "vocals") -> dict:
     state = network.state_dict()
     if not state or not all(torch.isfinite(value).all() for value in state.values()):
         raise RuntimeError("Pretrained UMXHQ vocals state dict contains missing or non-finite values")
     if not hasattr(network, "input_mean") or not hasattr(network, "input_scale"):
         raise RuntimeError("Pretrained model is missing input scaler parameters")
     return {
-        "source": "official UMXHQ vocals via openunmix.utils.load_target_models",
+        "source": f"official UMXHQ {target} via openunmix.utils.load_target_models",
+        "target": target,
         "state_dict_keys": len(state),
         "parameter_count": sum(parameter.numel() for parameter in network.parameters()),
         "all_state_values_finite": True,
@@ -112,25 +115,27 @@ def save_listening_outputs(
     predicted: torch.Tensor,
     checkpoint_paths: dict[str, Path],
     epoch_number: int,
+    target: str = "vocals",
     *,
     is_best_validation: bool,
     is_best_si_sdr: bool,
 ) -> dict[str, str]:
     if epoch_number < 0:
         raise ValueError("Epoch number cannot be negative")
+    filename = f"predicted_{target}.wav"
     epoch_path = (
         checkpoint_paths["listening"]
         / f"epoch_{epoch_number:04d}"
-        / "predicted_vocals.wav"
+        / filename
     )
     save_float_wav(epoch_path, predicted)
     saved = {"epoch": str(epoch_path)}
     if is_best_validation:
-        path = checkpoint_paths["listening"] / "best_validation" / "predicted_vocals.wav"
+        path = checkpoint_paths["listening"] / "best_validation" / filename
         save_float_wav(path, predicted)
         saved["best_validation"] = str(path)
     if is_best_si_sdr:
-        path = checkpoint_paths["listening"] / "best_si_sdr" / "predicted_vocals.wav"
+        path = checkpoint_paths["listening"] / "best_si_sdr" / filename
         save_float_wav(path, predicted)
         saved["best_si_sdr"] = str(path)
     return saved
@@ -253,17 +258,21 @@ def save_and_promote_checkpoints(
         shutil.copy2(checkpoint_paths["latest"], checkpoint_paths["best_si_sdr"])
 
 
-def build_config(batch_size: int, workers: int, pretrained_info: dict) -> dict:
-    config = training_configuration(batch_size, workers, "pretrained UMXHQ vocals")
+def build_config(
+    batch_size: int, workers: int, pretrained_info: dict, target: str = "vocals"
+) -> dict:
+    config = training_configuration(
+        batch_size, workers, f"pretrained UMXHQ {target}", target=target
+    )
     config.update({
-        "run": "Open-Unmix V3 pretrained UMXHQ vocals fine-tuning",
+        "run": f"Open-Unmix V3 pretrained UMXHQ {target} fine-tuning",
         "learning_rate": LEARNING_RATE,
         "weight_decay": WEIGHT_DECAY,
-        "maximum_planned_epoch_equivalents": 3.0,
+        "maximum_planned_epoch_equivalents": 5.0,
         "cpu_flush_denormal": True,
         "pretrained_model": pretrained_info,
         "input_statistics": {
-            "source": "pretrained UMXHQ vocals model",
+            "source": f"pretrained UMXHQ {target} model",
             "v2_input_statistics_cache_used": False,
             "input_mean_sha256": pretrained_info["input_mean_sha256"],
             "input_scale_sha256": pretrained_info["input_scale_sha256"],
@@ -273,9 +282,16 @@ def build_config(batch_size: int, workers: int, pretrained_info: dict) -> dict:
     return config
 
 
-def evaluate_full_epoch(network, encoder, split, hybrid_models, reference_audio, step, samples_seen, elapsed) -> tuple[dict, torch.Tensor]:
-    validation_loss, details = deterministic_validation_loss(network, encoder, split)
-    predicted = hybrid_vocals_overlap_add(network, hybrid_models, reference_audio[0])
+def evaluate_full_epoch(
+    network, encoder, split, hybrid_models, reference_audio,
+    step, samples_seen, elapsed, target: str = "vocals"
+) -> tuple[dict, torch.Tensor]:
+    validation_loss, details = deterministic_validation_loss(
+        network, encoder, split, target=target
+    )
+    predicted = hybrid_target_overlap_add(
+        network, hybrid_models, reference_audio[0], target=target
+    )
     score = si_sdr_db(predicted, reference_audio[1])
     return {
         "optimizer_step": step,
@@ -287,6 +303,7 @@ def evaluate_full_epoch(network, encoder, split, hybrid_models, reference_audio,
         "elapsed_seconds": elapsed,
         "hybrid_wiener": True,
         "reference_song": REFERENCE_SONG,
+        "target": target,
     }, predicted
 
 
@@ -321,7 +338,7 @@ def state_payload(
     next_command,
 ) -> dict:
     return {
-        "session_intent": "Prepare and independently run V3 UMXHQ vocals fine-tuning without modifying V1/V2 artifacts.",
+        "session_intent": f"Independently run V3 UMXHQ {config['target']} fine-tuning without modifying other targets or V1/V2 artifacts.",
         "status": status,
         "data_split": {
             "path": str(SPLIT_FILE),
@@ -347,7 +364,7 @@ def state_payload(
         "elapsed_seconds": elapsed,
         "errors_and_unresolved_issues": errors,
         "next_resume_command": next_command,
-        "next_action": "Run V3 vocals only with -Resume; do not continue V2 or start other targets.",
+        "next_action": f"Resume V3 {config['target']} only; the overnight runner controls target order.",
     }
 
 
@@ -357,12 +374,12 @@ def main() -> None:
         raise ValueError("Batch size must be positive and workers non-negative")
     if args.max_wall_hours <= 0 or args.max_epoch_equivalents <= 0:
         raise ValueError("Time and epoch-equivalent limits must be positive")
-    if args.max_epoch_equivalents > 3.0:
-        raise ValueError("V3 is capped at 3 epoch-equivalents")
+    if args.max_epoch_equivalents > 5.0:
+        raise ValueError("V3 is capped at 5 epoch-equivalents")
     if args.prepare_only and args.resume:
         raise ValueError("--prepare-only initializes epoch 0 and cannot be combined with --resume")
 
-    output_dir = args.output_dir.resolve()
+    output_dir = (args.output_dir or (V3_ROOT / args.target)).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     p = paths(output_dir)
     if not args.resume and p["latest"].exists():
@@ -379,15 +396,15 @@ def main() -> None:
     if not torch.set_flush_denormal(True):
         raise RuntimeError("This CPU/PyTorch build does not support flushing denormals")
 
-    network = load_pretrained_umxhq_vocals_model()
-    pretrained_info = validate_pretrained_model(network)
-    config = build_config(args.batch_size, args.workers, pretrained_info)
+    network = load_pretrained_umxhq_target_model(args.target)
+    pretrained_info = validate_pretrained_model(network, args.target)
+    config = build_config(args.batch_size, args.workers, pretrained_info, args.target)
     config["split_sha256"] = split_sha256(split)
     config["max_epoch_equivalents"] = args.max_epoch_equivalents
     config["max_wall_hours"] = args.max_wall_hours
     encoder = build_encoder()
     optimizer = torch.optim.Adam(network.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
-    dataset = AugmentedMusdbDataset(split)
+    dataset = AugmentedMusdbDataset(split, target=args.target)
 
     step = 0
     samples_seen = 0
@@ -409,6 +426,10 @@ def main() -> None:
         if package["split_sha256"] != split_sha256(split):
             raise RuntimeError("Resume checkpoint split differs from current split.json")
         old_config = package["configuration"]
+        if old_config.get("target", "vocals") != args.target:
+            raise RuntimeError(
+                f"Checkpoint target {old_config.get('target')} does not match --target {args.target}"
+            )
         if int(old_config["batch_size"]) != args.batch_size:
             raise RuntimeError("Resume must use the checkpoint batch size")
         expected_mean_hash = old_config["input_statistics"]["input_mean_sha256"]
@@ -437,7 +458,8 @@ def main() -> None:
     session_started = time.perf_counter()
     next_command = (
         f'& "{Path(sys.executable).resolve()}" -u "{Path(__file__).resolve()}" '
-        f'--resume "{p["latest"]}" --batch-size {args.batch_size} --workers {args.workers} '
+        f'--target {args.target} --resume "{p["latest"]}" '
+        f'--batch-size {args.batch_size} --workers {args.workers} '
         f'--max-epoch-equivalents {args.max_epoch_equivalents} --max-wall-hours {args.max_wall_hours}'
     )
     atomic_json(p["state"], state_payload(
@@ -453,11 +475,11 @@ def main() -> None:
     hybrid_models = None
     reference_audio = None
     if not args.resume:
-        hybrid_models = load_hybrid_interferer_models()
-        reference_audio = load_reference_audio()
+        hybrid_models = load_hybrid_interferer_models(args.target)
+        reference_audio = load_reference_audio(args.target)
         validation, predicted = evaluate_full_epoch(
             network, encoder, split, hybrid_models, reference_audio,
-            0, 0, time.perf_counter() - session_started,
+            0, 0, time.perf_counter() - session_started, target=args.target,
         )
         validation["elapsed_seconds"] = time.perf_counter() - session_started
         validation_history.append(validation)
@@ -468,7 +490,8 @@ def main() -> None:
         best_si_sdr_step = 0
         best_si_sdr_epoch = 0.0
         save_listening_outputs(
-            predicted, p, 0, is_best_validation=True, is_best_si_sdr=True
+            predicted, p, 0, target=args.target,
+            is_best_validation=True, is_best_si_sdr=True
         )
         prior_elapsed = time.perf_counter() - session_started
         append_epoch_zero_log(p["log"], best_validation_loss, best_si_sdr_db, prior_elapsed)
@@ -496,7 +519,9 @@ def main() -> None:
             summary.update({
                 "formal_fine_tuning_started": False,
                 "checkpoint_reload_verified": reload_package["optimizer_step"] == 0,
-                "epoch_0_listening_sample": str(p["listening"] / "epoch_0000" / "predicted_vocals.wav"),
+                "epoch_0_listening_sample": str(
+                    p["listening"] / "epoch_0000" / f"predicted_{args.target}.wav"
+                ),
                 "training_log": str(p["log"]),
             })
             atomic_json(p["summary"], summary)
@@ -545,11 +570,11 @@ def main() -> None:
                 is_best_si_sdr = False
                 if completed_epoch:
                     if hybrid_models is None:
-                        hybrid_models = load_hybrid_interferer_models()
-                        reference_audio = load_reference_audio()
+                        hybrid_models = load_hybrid_interferer_models(args.target)
+                        reference_audio = load_reference_audio(args.target)
                     validation, predicted = evaluate_full_epoch(
                         network, encoder, split, hybrid_models, reference_audio,
-                        step, samples_seen, elapsed,
+                        step, samples_seen, elapsed, target=args.target,
                     )
                     validation["elapsed_seconds"] = prior_elapsed + time.perf_counter() - session_started
                     validation_history.append(validation)
@@ -566,7 +591,7 @@ def main() -> None:
                         best_si_sdr_step = step
                         best_si_sdr_epoch = float(epoch_number)
                     save_listening_outputs(
-                        predicted, p, int(epoch_number),
+                        predicted, p, int(epoch_number), target=args.target,
                         is_best_validation=is_best_validation,
                         is_best_si_sdr=is_best_si_sdr,
                     )

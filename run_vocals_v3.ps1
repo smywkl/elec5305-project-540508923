@@ -2,7 +2,7 @@ param(
     [string]$PythonPath,
     [switch]$Resume,
     [double]$MaxWallHours = 2.0,
-    [double]$MaxEpochEquivalents = 3.0,
+    [double]$MaxEpochEquivalents = 5.0,
     [int]$BatchSize = 16,
     [int]$Workers = 2,
     [switch]$DryRun
@@ -13,7 +13,7 @@ Set-StrictMode -Version Latest
 
 $projectRoot = $PSScriptRoot
 $python = $null
-$trainer = Join-Path $projectRoot "scripts\openunmix_v2\train_vocals_v3.py"
+$trainer = Join-Path $projectRoot "scripts\openunmix_v2\train_target_v3.py"
 $outputDir = Join-Path $projectRoot "outputs\training\openunmix_v3\vocals"
 $latestCheckpoint = Join-Path $outputDir "latest_checkpoint.pt"
 
@@ -44,8 +44,8 @@ if (-not $python -or -not (Test-Path -LiteralPath $python)) {
 if (-not (Test-Path -LiteralPath $trainer)) {
     throw "V3 trainer not found: $trainer"
 }
-if ($MaxEpochEquivalents -gt 3.0) {
-    throw "V3 is capped at 3 epoch-equivalents."
+if ($MaxEpochEquivalents -gt 5.0) {
+    throw "V3 is capped at 5 epoch-equivalents."
 }
 New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
 
@@ -54,6 +54,7 @@ $consoleLog = Join-Path $outputDir "console_$timestamp.log"
 $trainArgs = @(
     "-u",
     $trainer,
+    "--target", "vocals",
     "--output-dir", $outputDir,
     "--batch-size", $BatchSize,
     "--workers", $Workers,

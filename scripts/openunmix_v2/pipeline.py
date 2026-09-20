@@ -102,13 +102,17 @@ def _read_chunk(path: Path, start_frame: int, frames: int = CHUNK_FRAMES) -> tor
 class AugmentedMusdbDataset(Dataset):
     """Balanced, deterministic implementation of official-style MUSDB augmentation.
 
-    Each local epoch index maps to one of 64 target-vocal examples for each of
-    the 90 tracks. Interfering sources come from independently selected tracks.
+    Each local epoch index maps to one of 64 examples for the selected target
+    from each of the 90 tracks. Other sources use independently selected tracks.
     Per-source gain and channel swapping mirror openunmix.data augmentations.
     """
 
-    def __init__(self, split: dict, seed: int = SEED):
+    def __init__(self, split: dict, target: str = "vocals", seed: int = SEED):
+        if target not in SOURCES:
+            raise ValueError(f"Unsupported target: {target}")
         self.tracks = list(split["train"])
+        self.target = target
+        self.target_index = SOURCES.index(target)
         self.seed = int(seed)
         if len(self.tracks) != TRAIN_TRACKS:
             raise RuntimeError(f"Expected {TRAIN_TRACKS} training tracks")
@@ -136,7 +140,7 @@ class AugmentedMusdbDataset(Dataset):
         swaps = []
 
         for source in SOURCES:
-            track = target_track if source == "vocals" else self.tracks[int(rng.integers(len(self.tracks)))]
+            track = target_track if source == self.target else self.tracks[int(rng.integers(len(self.tracks)))]
             available = self.frames[track][source]
             start = int(rng.integers(0, max(1, available - CHUNK_FRAMES + 1)))
             audio = _read_chunk(MUSDB_TRAIN / track / f"{source}.wav", start)
@@ -155,11 +159,12 @@ class AugmentedMusdbDataset(Dataset):
 
         stems = torch.stack(augmented_sources)
         mixture = stems.sum(dim=0)
-        target = stems[0]
+        target = stems[self.target_index]
         metadata = {
             "worker_pid": os.getpid(),
             "local_index": int(local_index),
             "target_track_index": target_track_index,
+            "target_source": self.target,
             "selected_tracks": selected_tracks,
             "start_frames": starts,
             "gains": gains,
@@ -169,11 +174,14 @@ class AugmentedMusdbDataset(Dataset):
 
 
 class FixedValidationDataset(Dataset):
-    def __init__(self, split: dict):
+    def __init__(self, split: dict, target: str = "vocals"):
+        if target not in SOURCES:
+            raise ValueError(f"Unsupported target: {target}")
         segments = split.get("validation_segments")
         if not segments or len(segments) != 10:
             raise RuntimeError("split.json is missing the 10 fixed validation segments")
         self.segments = segments
+        self.target_index = SOURCES.index(target)
 
     def __len__(self) -> int:
         return len(self.segments)
@@ -186,7 +194,7 @@ class FixedValidationDataset(Dataset):
             _read_chunk(MUSDB_TRAIN / track / f"{source}.wav", start)
             for source in SOURCES
         ])
-        return sources.sum(dim=0), sources[0], track
+        return sources.sum(dim=0), sources[self.target_index], track
 
 
 def epoch_indices(epoch_index: int, sample_offset: int = 0) -> list[tuple[int, int]]:
@@ -223,11 +231,18 @@ def build_encoder() -> torch.nn.Module:
     return torch.nn.Sequential(stft, model.ComplexNorm(mono=False))
 
 
-def load_pretrained_umxhq_vocals_model() -> model.OpenUnmix:
-    """Load the complete pretrained model, including its own input statistics."""
+def load_pretrained_umxhq_target_model(target: str) -> model.OpenUnmix:
+    """Load one complete pretrained UMXHQ target, including input statistics."""
+    if target not in SOURCES:
+        raise ValueError(f"Unsupported target: {target}")
     return utils.load_target_models(
-        ["vocals"], model_str_or_path="umxhq", device="cpu", pretrained=True
-    )["vocals"]
+        [target], model_str_or_path="umxhq", device="cpu", pretrained=True
+    )[target]
+
+
+def load_pretrained_umxhq_vocals_model() -> model.OpenUnmix:
+    """Compatibility wrapper for the original vocals-only V3 code."""
+    return load_pretrained_umxhq_target_model("vocals")
 
 
 def compute_input_statistics(split: dict, output_path: Path = INPUT_STATISTICS_FILE, force: bool = False) -> dict:
@@ -325,8 +340,10 @@ def magnitude_mse(network: torch.nn.Module, encoder: torch.nn.Module, mixture, t
     return torch.nn.functional.mse_loss(estimate, expected)
 
 
-def deterministic_validation_loss(network, encoder, split: dict) -> tuple[float, list[dict]]:
-    dataset = FixedValidationDataset(split)
+def deterministic_validation_loss(
+    network, encoder, split: dict, target: str = "vocals"
+) -> tuple[float, list[dict]]:
+    dataset = FixedValidationDataset(split, target=target)
     was_training = network.training
     network.eval()
     details = []
@@ -339,39 +356,45 @@ def deterministic_validation_loss(network, encoder, split: dict) -> tuple[float,
     return float(np.mean([item["loss"] for item in details])), details
 
 
-def load_reference_audio() -> tuple[torch.Tensor, torch.Tensor]:
+def load_reference_audio(target: str = "vocals") -> tuple[torch.Tensor, torch.Tensor]:
+    if target not in SOURCES:
+        raise ValueError(f"Unsupported target: {target}")
     mixture, mixture_rate = sf.read(
         MUSDB_TRAIN / REFERENCE_SONG / "mixture.wav", dtype="float32", always_2d=True
     )
-    vocals, vocals_rate = sf.read(
-        MUSDB_TRAIN / REFERENCE_SONG / "vocals.wav", dtype="float32", always_2d=True
+    target_audio, target_rate = sf.read(
+        MUSDB_TRAIN / REFERENCE_SONG / f"{target}.wav", dtype="float32", always_2d=True
     )
-    if mixture_rate != SAMPLE_RATE or vocals_rate != SAMPLE_RATE or mixture.shape != vocals.shape:
-        raise RuntimeError("Reference mixture/vocals format mismatch")
-    return torch.from_numpy(mixture.T.copy()), torch.from_numpy(vocals.T.copy())
+    if mixture_rate != SAMPLE_RATE or target_rate != SAMPLE_RATE or mixture.shape != target_audio.shape:
+        raise RuntimeError(f"Reference mixture/{target} format mismatch")
+    return torch.from_numpy(mixture.T.copy()), torch.from_numpy(target_audio.T.copy())
 
 
-def load_hybrid_interferer_models() -> dict[str, torch.nn.Module]:
+def load_hybrid_interferer_models(target: str = "vocals") -> dict[str, torch.nn.Module]:
+    if target not in SOURCES:
+        raise ValueError(f"Unsupported target: {target}")
+    interferers = [source for source in SOURCES if source != target]
     return utils.load_target_models(
-        ["drums", "bass", "other"],
+        interferers,
         model_str_or_path="umxhq",
         device="cpu",
         pretrained=True,
     )
 
 
-def hybrid_vocals_overlap_add(
-    custom_vocals: torch.nn.Module,
+def hybrid_target_overlap_add(
+    custom_target: torch.nn.Module,
     pretrained_interferers: dict[str, torch.nn.Module],
     mixture: torch.Tensor,
+    target: str,
     overlap: float = 0.5,
 ) -> torch.Tensor:
-    was_training = custom_vocals.training
+    if target not in SOURCES:
+        raise ValueError(f"Unsupported target: {target}")
+    was_training = custom_target.training
     targets = {
-        "vocals": custom_vocals,
-        "drums": pretrained_interferers["drums"],
-        "bass": pretrained_interferers["bass"],
-        "other": pretrained_interferers["other"],
+        source: custom_target if source == target else pretrained_interferers[source]
+        for source in SOURCES
     }
     separator = model.Separator(
         targets,
@@ -400,12 +423,24 @@ def hybrid_vocals_overlap_add(
     with torch.inference_mode():
         for start in starts:
             estimates = separator(padded[:, start:start + chunk_frames].unsqueeze(0))
-            output[:, start:start + chunk_frames] += estimates[0, 0] * window
+            output[:, start:start + chunk_frames] += estimates[0, SOURCES.index(target)] * window
             weight[start:start + chunk_frames] += window
     result = output / weight.clamp_min(1e-8).unsqueeze(0)
     if was_training:
-        custom_vocals.train()
+        custom_target.train()
     return result[:, pad_frames:pad_frames + mixture.shape[-1]].contiguous()
+
+
+def hybrid_vocals_overlap_add(
+    custom_vocals: torch.nn.Module,
+    pretrained_interferers: dict[str, torch.nn.Module],
+    mixture: torch.Tensor,
+    overlap: float = 0.5,
+) -> torch.Tensor:
+    """Compatibility wrapper for vocals-only callers."""
+    return hybrid_target_overlap_add(
+        custom_vocals, pretrained_interferers, mixture, target="vocals", overlap=overlap
+    )
 
 
 def si_sdr_db(estimate: torch.Tensor, reference: torch.Tensor, epsilon: float = 1e-8) -> float:
@@ -430,10 +465,14 @@ def save_float_wav(path: Path, audio: torch.Tensor) -> None:
     sf.write(path, audio.detach().cpu().T.numpy(), SAMPLE_RATE, subtype="FLOAT")
 
 
-def training_configuration(batch_size: int, workers: int, init_mode: str = "random") -> dict:
+def training_configuration(
+    batch_size: int, workers: int, init_mode: str = "random", target: str = "vocals"
+) -> dict:
+    if target not in SOURCES:
+        raise ValueError(f"Unsupported target: {target}")
     return {
         "run": "Open-Unmix V2 augmented vocals",
-        "target": "vocals",
+        "target": target,
         "initialization": init_mode,
         "device": "cpu",
         "sample_rate": SAMPLE_RATE,
@@ -459,13 +498,13 @@ def training_configuration(batch_size: int, workers: int, init_mode: str = "rand
             "random_6_second_chunks": True,
             "per_source_gain_range": [0.25, 1.25],
             "per_source_channel_swap_probability": 0.5,
-            "random_track_mixing": "vocals fixed to balanced target track; drums/bass/other independently sampled",
+            "random_track_mixing": f"{target} fixed to balanced target track; all other sources independently sampled",
         },
         "validation": {
             "fixed_segments": 10,
             "every_epoch_equivalent": 1.0,
             "reference_song": REFERENCE_SONG,
-            "hybrid_targets": "custom vocals + pretrained UMXHQ drums/bass/other",
+            "hybrid_targets": f"custom {target} + pretrained UMXHQ for the other three sources",
             "metric": "mean stereo-channel SI-SDR in dB",
         },
         "official_test_used": False,
