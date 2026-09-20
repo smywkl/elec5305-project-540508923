@@ -421,8 +421,10 @@ def main():
                         best_si_sdr_step = step
                     if predicted is not None:
                         epoch_number = int(round(epoch_equivalent))
-                        if epoch_number in {1, 3, 5}:
-                            save_float_wav(p["listening"] / f"epoch_{epoch_number:04d}" / "predicted_vocals.wav", predicted)
+                        save_float_wav(
+                            p["listening"] / f"epoch_{epoch_number:04d}" / "predicted_vocals.wav",
+                            predicted,
+                        )
                         if is_best_validation:
                             save_float_wav(p["listening"] / "best_validation" / "predicted_vocals.wav", predicted)
                         if is_best_si_sdr:
