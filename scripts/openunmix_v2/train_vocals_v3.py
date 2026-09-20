@@ -260,6 +260,7 @@ def build_config(batch_size: int, workers: int, pretrained_info: dict) -> dict:
         "learning_rate": LEARNING_RATE,
         "weight_decay": WEIGHT_DECAY,
         "maximum_planned_epoch_equivalents": 3.0,
+        "cpu_flush_denormal": True,
         "pretrained_model": pretrained_info,
         "input_statistics": {
             "source": "pretrained UMXHQ vocals model",
@@ -372,6 +373,11 @@ def main() -> None:
     np.random.seed(SEED)
     torch.manual_seed(SEED)
     torch.set_num_threads(max(1, os.cpu_count() or 1))
+    # Official UMXHQ contains many numerically-zero subnormal weights. On this
+    # CPU, gradual-underflow arithmetic makes forward/backward several times
+    # slower; flush-to-zero restores normal float32 throughput.
+    if not torch.set_flush_denormal(True):
+        raise RuntimeError("This CPU/PyTorch build does not support flushing denormals")
 
     network = load_pretrained_umxhq_vocals_model()
     pretrained_info = validate_pretrained_model(network)
