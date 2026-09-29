@@ -7,6 +7,7 @@ scriptPath = mfilename("fullpath");
 repoRoot = fileparts(fileparts(fileparts(fileparts(scriptPath))));
 addpath(fullfile(repoRoot, "src", "matlab", "phase2", "hrtf"));
 addpath(fullfile(repoRoot, "src", "matlab", "phase2", "oracle"));
+addpath(fullfile(repoRoot, "src", "matlab", "phase2", "spatial"));
 
 phaseName = "Phase 2.2 - Oracle Static Spatialisation Pipeline";
 trackName = "Swinging Steaks - Lost My Way";
@@ -125,7 +126,7 @@ writtenSignals = struct();
 
 for conditionIndex = 1:numel(conditionNames)
     conditionName = conditionNames(conditionIndex);
-    [oracleRaw, lookups, renderDiagnostics] = render_oracle_mix( ...
+    [oracleRaw, lookups, renderDiagnostics] = render_stem_mix( ...
         excerpt.mono, subject, conditionName, azimuthMatrix(conditionIndex, :), ...
         elevationDeg, maximumDirectionMismatchDeg);
     lookupCells{conditionIndex} = lookups;
