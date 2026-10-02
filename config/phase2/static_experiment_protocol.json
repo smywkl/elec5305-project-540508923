@@ -1,0 +1,201 @@
+{
+  "protocol_version": "1.0",
+  "status": "frozen_after_phase2_4",
+  "frozen_before_official_test": true,
+  "freeze_date": "2026-09-30",
+  "official_test_used": false,
+  "sir_resolved_before_official_test": true,
+  "development_track": "Swinging Steaks - Lost My Way",
+  "development_split": "validation",
+  "protocol_selection_basis": "Protocol choices were fixed before official-test access and were not selected from development metric results.",
+  "dataset": {
+    "name": "MUSDB18-HQ",
+    "final_evaluation_split": "official test",
+    "number_of_tracks": 10,
+    "phase2_4_access_rule": "Do not enumerate track names or read official-test audio during Phase 2.4."
+  },
+  "track_selection": {
+    "status": "algorithm_frozen_names_not_yet_generated",
+    "normalization": "Unicode NFC applied to each exact official-test track directory name",
+    "encoding": "UTF-8",
+    "salt": "ELEC5305_PHASE2_TEST_5305|",
+    "algorithm": [
+      "At the first Phase 2.5 execution, obtain all official-test track directory names without reading audio content.",
+      "Normalize every exact directory name to Unicode NFC and fail if normalization produces duplicate names.",
+      "For each normalized name, compute SHA256(UTF8(\"ELEC5305_PHASE2_TEST_5305|\" + normalized_track_name)).",
+      "Sort by lowercase SHA-256 hexadecimal digest ascending; use normalized track name ascending only as an impossible-digest-collision tie-break.",
+      "Select the first 10 and freeze that generated manifest before inference or metric computation."
+    ],
+    "blindness": "independent of audio content, separation quality, downstream results, and random-number-generator implementation"
+  },
+  "excerpt": {
+    "interval": "[30 s, 60 s)",
+    "start_seconds": 30,
+    "end_seconds": 60,
+    "duration_seconds": 30,
+    "sample_rate_hz": 44100,
+    "frames": 1323000,
+    "short_track_policy": "Stop Phase 2.5 and report a protocol-amendment requirement if any selected track is shorter than 60 seconds; do not choose another segment automatically."
+  },
+  "separator": {
+    "configuration": "G_pretrained_HTDemucs_FT",
+    "model": "official pretrained htdemucs_ft",
+    "repository": "adefossez/HTDemucs-ft",
+    "revision": "d74ac89c3a1e874fc78f152555cf4d8533f06cd4",
+    "configuration_fingerprint": "038a7a3bd24dad340ccbab26565f463f7f04173848b931e7c1a5610726c621b2",
+    "official_pretrained": true,
+    "custom_checkpoint_used": false
+  },
+  "source_representation": {
+    "canonical_source_order": [
+      "bass",
+      "vocals",
+      "drums",
+      "other"
+    ],
+    "input_channels": "stereo [left, right]",
+    "renderer_input": "one mono stem per virtual point source",
+    "mono_formula": "x_mono = 0.5 * (x_L + x_R)",
+    "pre_metric_processing": "no normalization, loudness matching, resampling, trimming, or automatic alignment"
+  },
+  "hrtf": {
+    "dataset": "CIPIC",
+    "subject": "subject_003",
+    "sofa_sha256": "A9DB5F938ED1113B118DCBEB43F5FE1B27B9E191D1BBDB63FBC4803B6959B220",
+    "elevation_deg": 0,
+    "interpolation": "none",
+    "maximum_direction_mismatch_deg": 1
+  },
+  "spatial_conditions": [
+    {
+      "condition": "colocated",
+      "source_order": ["bass", "vocals", "drums", "other"],
+      "azimuths_deg": [0, 0, 0, 0]
+    },
+    {
+      "condition": "moderate",
+      "source_order": ["bass", "vocals", "drums", "other"],
+      "azimuths_deg": [-30, -10, 10, 30]
+    },
+    {
+      "condition": "wide",
+      "source_order": ["bass", "vocals", "drums", "other"],
+      "azimuths_deg": [-80, -30, 30, 80]
+    }
+  ],
+  "convolution": {
+    "type": "full linear convolution",
+    "hrir_length_samples": 200,
+    "output_frames_rule": "input_frames + hrir_length_samples - 1"
+  },
+  "gain": {
+    "listening_gain": 0.25,
+    "listening_gain_scope": "written demonstration WAV only",
+    "scientific_metric_signals": "raw floating-point signals before listening gain",
+    "normalization": "none"
+  },
+  "source_metrics": {
+    "final_predictors": ["macro_si_sdr_db", "macro_sir_db"],
+    "save_per_stem": true,
+    "macro_aggregation": "unweighted arithmetic mean across four stems",
+    "si_sdr": {
+      "status": "frozen_validated",
+      "definition": "zero mean; alpha=dot(estimate,reference)/dot(reference,reference); target=alpha*reference; error=estimate-target; 10*log10((||target||^2+eps)/(||error||^2+eps))",
+      "epsilon": "IEEE-754 float64 epsilon",
+      "finite_cap_db": 300
+    },
+    "sir": {
+      "status": "frozen_validated_before_official_test",
+      "metric": "BSS Eval v4 SIR",
+      "implementation": "museval.metrics.bss_eval",
+      "package": "museval",
+      "version": "0.4.1",
+      "evaluation_scope": "whole 30-second excerpt; one result per source",
+      "source_order": ["bass", "vocals", "drums", "other"],
+      "input_shape": "(4, N, 1)",
+      "identity_mapping": "bass->bass, vocals->vocals, drums->drums, other->other",
+      "parameters": {
+        "window": "infinity",
+        "hop": "infinity",
+        "compute_permutation": false,
+        "filters_len": 512,
+        "framewise_filters": false,
+        "bsseval_sources_version": false
+      },
+      "aggregation": "unweighted arithmetic mean across the four whole-excerpt source SIR values",
+      "permutation_requirement": "returned permutation must equal [0, 1, 2, 3]",
+      "wrapper_policy": "Do not use bss_eval_sources wrapper."
+    }
+  },
+  "downstream_metrics": {
+    "implementation_reference": "src/matlab/phase2/comparison/compute_binaural_comparison_metrics.m validated in Phase 2.3",
+    "definitions_frozen": true,
+    "metrics": [
+      {
+        "name": "binaural SI-SDR",
+        "outputs": ["left_db", "right_db", "arithmetic_mean_db"],
+        "definition": "Phase 2.3 zero-mean projection SI-SDR independently per ear"
+      },
+      {
+        "name": "relative waveform RMSE",
+        "outputs": ["left", "right", "arithmetic_mean"],
+        "definition": "RMS(estimate-oracle)/RMS(oracle) independently per ear"
+      },
+      {
+        "name": "STFT log-magnitude MAE",
+        "outputs": ["left_db", "right_db", "arithmetic_mean_db"],
+        "definition": "mean(abs(20log10(|STFT_estimate|+eps)-20log10(|STFT_oracle|+eps))) independently per ear"
+      }
+    ],
+    "new_metric_policy": "Do not add downstream metrics after Phase 2.4 unless a mathematical bug is found."
+  },
+  "stft": {
+    "window_type": "periodic Hann",
+    "window_length_samples": 1024,
+    "hop_size_samples": 256,
+    "overlap_samples": 768,
+    "fft_size": 1024,
+    "magnitude_epsilon": "MATLAB double eps (2.220446049250313e-16)",
+    "scientific_metric_db_floor": null,
+    "display_only_db_floor": -100,
+    "boundary_policy": "MATLAB spectrogram behavior used by the frozen Phase 2.3 implementation"
+  },
+  "analysis_plan": {
+    "observation_unit": "one song",
+    "final_n": 10,
+    "pseudo_replication_rule": "Do not treat four stems times ten songs as forty independent downstream observations.",
+    "rq1": {
+      "question": "Does downstream error change with spatial condition?",
+      "design": "Each song is one paired unit across colocated, moderate, and wide conditions.",
+      "reporting": "Show all 10 paired song results plus condition mean, median, and variability without assuming an ordering in advance.",
+      "phase2_4_statistics": "none"
+    },
+    "rq2": {
+      "question": "Does source-separation quality predict downstream spatial fidelity?",
+      "association": "Spearman rank correlation",
+      "predictors": ["macro_si_sdr_db", "macro_sir_db"],
+      "outcomes": ["binaural_si_sdr_mean_db", "relative_rmse_mean", "stft_logmag_mae_mean_db"],
+      "primary_conditions": ["moderate", "wide"],
+      "secondary_condition": "colocated",
+      "reporting": "Report Spearman rho and scatter plots; emphasize direction, magnitude, scatter, and consistency. Any p-value is descriptive only.",
+      "phase2_4_correlation": "none"
+    }
+  },
+  "primary_figures": [
+    "Figure A: downstream fidelity/error versus spatial condition with paired song points/lines and aggregate",
+    "Figure B: macro source SI-SDR versus downstream fidelity for moderate and wide",
+    "Figure C: macro SIR versus downstream fidelity for moderate and wide"
+  ],
+  "optional_figure": "Figure D: representative oracle/estimated/error spectrogram",
+  "interpretation": {
+    "metric_scope": "objective signal-level metrics",
+    "forbidden_claim": "Do not interpret relative RMSE or other objective metrics as a perceptual degradation percentage.",
+    "listening_wavs": "demonstration only",
+    "formal_listening_test": false
+  },
+  "readiness": {
+    "status": "READY FOR PHASE 2.5",
+    "blocker": null,
+    "basis": "Source SI-SDR and identity-fixed whole-excerpt museval BSS Eval v4 SIR were validated before official-test access."
+  }
+}
