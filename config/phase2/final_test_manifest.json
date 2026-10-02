@@ -1,0 +1,99 @@
+{
+  "manifest_version": "1.0",
+  "protocol_version": "1.0",
+  "protocol_sha256": "54a27252bcba432f5fd1b62b108cdd28bb059201a5c482e604c687c703f3d9f0",
+  "git_head_before_test_access": "4ba3eed691c68e4724cf9e9065b7845e6b5894a7",
+  "selection_seed_string": "ELEC5305_PHASE2_TEST_5305|",
+  "unicode_normalization": "Unicode NFC",
+  "hash_algorithm": "SHA-256",
+  "sort_order": "selection_sha256 ascending; track_name_nfc ascending as collision tie-break",
+  "total_test_tracks": 50,
+  "selected_track_count": 10,
+  "selected_tracks": [
+    {
+      "rank": 1,
+      "track_name_original": "BKS - Bulldozer",
+      "track_name_nfc": "BKS - Bulldozer",
+      "selection_sha256": "036ab8da90374be1ba56a873008e60e0db94fb9f170ce45012dab61712d2dd2d",
+      "dataset_relative_path": "data/musdb18hq/test/BKS - Bulldozer"
+    },
+    {
+      "rank": 2,
+      "track_name_original": "Secretariat - Over The Top",
+      "track_name_nfc": "Secretariat - Over The Top",
+      "selection_sha256": "05e35f114aa4677cb6e73fc89ad96a21e67ba7f753211287681c190d8e6ef081",
+      "dataset_relative_path": "data/musdb18hq/test/Secretariat - Over The Top"
+    },
+    {
+      "rank": 3,
+      "track_name_original": "Punkdisco - Oral Hygiene",
+      "track_name_nfc": "Punkdisco - Oral Hygiene",
+      "selection_sha256": "13cb8ef02463a0648a5682828c89c1d85b27e794ac96a2dd679598960dbc06fc",
+      "dataset_relative_path": "data/musdb18hq/test/Punkdisco - Oral Hygiene"
+    },
+    {
+      "rank": 4,
+      "track_name_original": "Skelpolu - Resurrection",
+      "track_name_nfc": "Skelpolu - Resurrection",
+      "selection_sha256": "1c2ff5758c783fe15a089080ae17d06b0a0644d9c78da232aa080a3f267b7231",
+      "dataset_relative_path": "data/musdb18hq/test/Skelpolu - Resurrection"
+    },
+    {
+      "rank": 5,
+      "track_name_original": "Zeno - Signs",
+      "track_name_nfc": "Zeno - Signs",
+      "selection_sha256": "1dced9a2814caed1f3ed9b3eb65f2a174f8239e8d75d83200c9dfc48d6067414",
+      "dataset_relative_path": "data/musdb18hq/test/Zeno - Signs"
+    },
+    {
+      "rank": 6,
+      "track_name_original": "Moosmusic - Big Dummy Shake",
+      "track_name_nfc": "Moosmusic - Big Dummy Shake",
+      "selection_sha256": "22804fd1aecaf19cdd31d1c1f7db733866f14d59207950b8c8df454afc5e57dd",
+      "dataset_relative_path": "data/musdb18hq/test/Moosmusic - Big Dummy Shake"
+    },
+    {
+      "rank": 7,
+      "track_name_original": "Louis Cressy Band - Good Time",
+      "track_name_nfc": "Louis Cressy Band - Good Time",
+      "selection_sha256": "2907efe038afbd26b48253941806bac160bfdb077011db1ed031da0e00e73fe8",
+      "dataset_relative_path": "data/musdb18hq/test/Louis Cressy Band - Good Time"
+    },
+    {
+      "rank": 8,
+      "track_name_original": "Al James - Schoolboy Facination",
+      "track_name_nfc": "Al James - Schoolboy Facination",
+      "selection_sha256": "2bb3cd0bd876fe3ae56a9f655d9952b69a4ca6d3e258e4a16d4764c8ba58caee",
+      "dataset_relative_path": "data/musdb18hq/test/Al James - Schoolboy Facination"
+    },
+    {
+      "rank": 9,
+      "track_name_original": "We Fell From The Sky - Not You",
+      "track_name_nfc": "We Fell From The Sky - Not You",
+      "selection_sha256": "352f3cd6252247e7994105eb9b25150c192b1e07dc55b709d5612dc76f92a1a7",
+      "dataset_relative_path": "data/musdb18hq/test/We Fell From The Sky - Not You"
+    },
+    {
+      "rank": 10,
+      "track_name_original": "Ben Carrigan - We'll Talk About It All Tonight",
+      "track_name_nfc": "Ben Carrigan - We'll Talk About It All Tonight",
+      "selection_sha256": "38c9d13e66acea161f877ba8dda374c2350993070d5f6d4c4fca59ab66fa0a9b",
+      "dataset_relative_path": "data/musdb18hq/test/Ben Carrigan - We'll Talk About It All Tonight"
+    }
+  ],
+  "source_order": [
+    "bass",
+    "vocals",
+    "drums",
+    "other"
+  ],
+  "excerpt_start_s": 30,
+  "excerpt_end_s": 60,
+  "sample_rate_hz": 44100,
+  "separation_execution_rule": "full_track_htdemucs_ft_then_extract_30_60s",
+  "official_test_audio_content_accessed": false,
+  "official_test_inference_run": false,
+  "official_test_metrics_computed": false,
+  "official_test_listening_performed": false,
+  "official_test_manifest_generated": true
+}
