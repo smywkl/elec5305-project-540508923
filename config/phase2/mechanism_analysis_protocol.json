@@ -1,0 +1,530 @@
+{
+  "protocol_name": "ELEC5305 Phase 2 mechanism analysis protocol",
+  "protocol_version": "1.0",
+  "status": "frozen_before_mechanism_results",
+  "freeze_date": "2026-10-03",
+  "freeze_git": {
+    "branch": "main",
+    "head": "538e953f75e1a2cbf2a0aaf9483b129dfcad6ddc",
+    "start_state_clean": true
+  },
+  "parent_static_protocol": {
+    "path": "config/phase2/static_experiment_protocol.json",
+    "version": "1.1",
+    "sha256": "3ffa00c2b14a7dc8ab09e2d1578c4a8aba62368b5054d17b091cab4912a8d0f3",
+    "parent_version": "1.0",
+    "parent_sha256": "54a27252bcba432f5fd1b62b108cdd28bb059201a5c482e604c687c703f3d9f0",
+    "scientific_results_modified": false
+  },
+  "final_manifest": {
+    "path": "config/phase2/final_test_manifest.json",
+    "sha256": "90b95632b5dc88e96ddd13d72066e08f3a9b2174e06dce1bb72968de0bb595dc",
+    "byte_identical_required": true
+  },
+  "scope": {
+    "purpose": "在不查看新 mechanism 结果的前提下，冻结 Phase 2.7 至 2.10 的机制、归因、时频定位和稳健性分析设计。",
+    "phase_2_5_established": [
+      "空间分离条件相对 colocated 条件暴露更多 downstream binaural mismatch。",
+      "source-level SI-SDR 与 SIR 和 downstream fidelity 存在 song-level association。",
+      "moderate 到 wide 并未在所有 fidelity metrics 上呈现一致的单调变化。"
+    ],
+    "phase_2_5_did_not_establish": [
+      "differential HRTF 为何改变 cross-stem error cancellation 或 reinforcement。",
+      "哪些 stem 独立或在 interaction-aware 意义下贡献最多。",
+      "误差位于哪些频率和时间结构。",
+      "结论对 common-HRTF direction 与 source-position assignment 是否稳健。"
+    ],
+    "included_now": [
+      "protocol and experimental design",
+      "mathematical decomposition and attribution definitions",
+      "spectral and temporal analysis definitions",
+      "counterfactual controls and robustness definitions",
+      "statistical plan",
+      "planned figures, tables, and output schemas",
+      "implementation strategy",
+      "synthetic mathematical validation"
+    ],
+    "excluded_now": [
+      "official-test waveform mechanism metric computation",
+      "real cancellation, stem attribution, or frequency-profile results",
+      "common-HRTF official-test controls",
+      "24-position official-test permutations",
+      "Phase 2.7 through 2.10 final figures",
+      "changes to Phase 2.5 protocol, results, or manifest",
+      "HTDemucs inference",
+      "Phase 3 dynamic rendering, crossfade, WOLA, application, demo, or UI"
+    ],
+    "official_test_mechanism_metrics_computed": false,
+    "no_result_leakage_rule": "所有 mechanism 陈述均为待检验问题、假设或预先规定的分析；不得写成尚未计算的发现。"
+  },
+  "frozen_inputs": {
+    "song_count": 10,
+    "manifest_ranks": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    "excerpt_interval": "[30 s, 60 s)",
+    "sample_rate_hz": 44100,
+    "input_frames": 1323000,
+    "reference_stems": "MUSDB18-HQ ground-truth stems",
+    "estimated_stems": "40 cached official pretrained HTDemucs-FT stems",
+    "separator_rerun": false,
+    "mono_formula": "x_mono = 0.5 * (x_L + x_R)",
+    "hrtf_dataset": "CIPIC",
+    "hrtf_subject": "subject_003",
+    "elevation_deg": 0,
+    "hrtf_interpolation": "none",
+    "convolution": "full linear convolution",
+    "source_order": ["bass", "vocals", "drums", "other"],
+    "canonical_conditions": [
+      {
+        "condition": "colocated",
+        "azimuths_deg": [0, 0, 0, 0]
+      },
+      {
+        "condition": "moderate",
+        "azimuths_deg": [-30, -10, 10, 30]
+      },
+      {
+        "condition": "wide",
+        "azimuths_deg": [-80, -30, 30, 80]
+      }
+    ]
+  },
+  "research_questions": {
+    "RQ3": "Why does assigning different HRTFs to separated stems increase downstream binaural mismatch compared with common/co-located filtering?",
+    "RQ4": "Which separated stems contribute most to downstream binaural error, and how does that contribution change with spatial condition?",
+    "RQ5": "Where in the time-frequency structure does the downstream error occur?",
+    "robustness_question": "Are the observed mechanisms robust to common-HRTF direction and source-position assignment?"
+  },
+  "linear_error_model": {
+    "ground_truth_mono_stem": "s_j",
+    "estimated_mono_stem": "s_hat_j",
+    "source_separation_error": "e_j = s_hat_j - s_j",
+    "condition_operator": "H_{j,c}: binaural full-linear-convolution operator for stem j in condition or assignment c",
+    "rendered_ground_truth_stem": "g_{j,c} = H_{j,c} * s_j",
+    "rendered_stem_error": "d_{j,c} = H_{j,c} * e_j",
+    "oracle_render": "y_c = sum_j H_{j,c} * s_j",
+    "estimated_render": "y_hat_c = sum_j H_{j,c} * s_hat_j",
+    "direct_residual": "D_c = y_hat_c - y_c",
+    "exact_identity": "D_c = sum_j d_{j,c}",
+    "identity_is_approximation": false
+  },
+  "binaural_vector_convention": {
+    "primary_scope": "combined left and right ears",
+    "squared_norm": "||x||^2 = sum_t x_L(t)^2 + sum_t x_R(t)^2",
+    "inner_product": "<x,z> = sum_t x_L(t)z_L(t) + sum_t x_R(t)z_R(t)",
+    "ear_specific_diagnostics_allowed": true,
+    "ear_specific_is_primary": false
+  },
+  "rq3_error_interaction": {
+    "individual_rendered_error_energy": "A_c = sum_j ||d_{j,c}||^2",
+    "total_downstream_error_energy": "T_c = ||sum_j d_{j,c}||^2",
+    "interaction_energy": "I_c = 2 * sum_{i<j} <d_{i,c}, d_{j,c}>",
+    "exact_energy_identity": "T_c = A_c + I_c",
+    "primary_metric": {
+      "name": "Error Retention Ratio",
+      "symbol": "R_c",
+      "definition": "R_c = T_c / A_c",
+      "interpretation": {
+        "less_than_1": "net cancellation",
+        "equal_to_1": "no net cross-stem interaction",
+        "greater_than_1": "net reinforcement"
+      },
+      "statistical_variable": true
+    },
+    "display_transform": {
+      "name": "Cancellation Gain",
+      "symbol": "G_c",
+      "definition": "G_c = 10 * log10(A_c / T_c)",
+      "interpretation": {
+        "greater_than_0_db": "net cancellation",
+        "equal_to_0_db": "neutral",
+        "less_than_0_db": "net reinforcement"
+      },
+      "primary_statistical_variable": false
+    },
+    "edge_cases": {
+      "A_c_exact_zero": "STOP and amend protocol; do not add a floor",
+      "T_c_exact_zero": "STOP and document edge case; do not add a floor"
+    },
+    "directional_hypotheses": {
+      "H3a": "R_moderate > R_colocated",
+      "H3b": "R_wide > R_colocated",
+      "H3c": "Canonical moderate and wide differential-HRTF conditions will generally retain more error than same-HRTF controls.",
+      "not_pre_registered": "R_wide > R_moderate"
+    },
+    "pairwise": {
+      "unordered_pairs": [
+        ["bass", "vocals"],
+        ["bass", "drums"],
+        ["bass", "other"],
+        ["vocals", "drums"],
+        ["vocals", "other"],
+        ["drums", "other"]
+      ],
+      "interaction": "I_{ij,c} = 2 * <d_{i,c}, d_{j,c}>",
+      "normalized_interaction": "J_{ij,c} = I_{ij,c} / A_c",
+      "normalized_interpretation": {
+        "negative": "该 pair 对 cancellation 有贡献",
+        "positive": "该 pair 对 reinforcement 有贡献"
+      },
+      "secondary_cosine": "C_{ij,c} = <d_i,d_j> / (||d_i|| ||d_j||)",
+      "zero_norm_cosine_rule": "若任一 norm 精确为 0，则标记 undefined；不得添加 epsilon。"
+    }
+  },
+  "validation_gates": {
+    "double_precision_required": true,
+    "cached_wav_read_then_convert_to_double": true,
+    "linear_reconstruction": {
+      "direct": "D_direct = estimated render - oracle render",
+      "decomposed": "D_decomposed = sum_j d_j",
+      "relative_l2": "||D_direct - D_decomposed|| / ||D_direct||",
+      "maximum": 1e-10,
+      "direct_residual_exact_zero": "STOP and document edge case"
+    },
+    "energy_identity": {
+      "relative_discrepancy": "abs(T - (A + I)) / max(T, A)",
+      "maximum": 1e-10,
+      "zero_denominator": "STOP and document edge case"
+    },
+    "one_stem_substitution": {
+      "comparison": "hybrid residual versus precomputed d_j",
+      "relative_l2_maximum": 1e-10,
+      "failure_action": "STOP",
+      "oracle_energy_exact_zero": "STOP and amend protocol; do not add a floor"
+    },
+    "shapley": {
+      "empty_coalition": "v(empty) approximately 0",
+      "full_coalition": "v(all) equals actual normalized squared downstream error",
+      "efficiency_relative_tolerance": 1e-10
+    }
+  },
+  "rq4_attribution": {
+    "independent_one_stem": {
+      "hybrid_definition": "y^{(j)} uses the estimated stem j and ground-truth for the other three stems",
+      "exact_residual": "y^{(j)} - y_oracle = d_j",
+      "metric_name": "Single-Stem Normalized Error Energy",
+      "symbol": "N_{j,c}",
+      "definition": "N_{j,c} = ||d_{j,c}||^2 / ||y_oracle,c||^2",
+      "interpretation": "该 stem error 单独存在时的 downstream effect；不得称为总 error 百分比。"
+    },
+    "exact_shapley": {
+      "players": ["bass", "vocals", "drums", "other"],
+      "coalition_count": 16,
+      "enumeration": "exact",
+      "monte_carlo": false,
+      "coalition_value": "v_c(S) = ||y_{S,c} - y_oracle,c||^2 / ||y_oracle,c||^2",
+      "formula": "phi_{j,c} = sum_{S subseteq J\\{j}} |S|!(4-|S|-1)!/4! * [v_c(S union {j}) - v_c(S)]",
+      "efficiency": "sum_j phi_{j,c} = v_c(all estimated stems)",
+      "negative_values_allowed": true,
+      "interpretation": "把 cross-stem interaction 公平分摊后，该 stem 对完整 downstream squared-error game 的平均边际贡献。"
+    },
+    "rank4_silent_reference": {
+      "rank": 4,
+      "track": "Skelpolu - Resurrection",
+      "stem": "vocals",
+      "reference_status": "INACTIVE_REFERENCE",
+      "ground_truth_exact_zero": true,
+      "estimated_nonzero": true,
+      "error_rule": "e_vocals = estimated vocals and must participate in d_j, interactions, independent contribution, Shapley, and total residual",
+      "ground_truth_normalized_ratio": "undefined",
+      "pre_registered_case_study": true,
+      "aggregate_replacement": false
+    }
+  },
+  "rq5_frequency_localization": {
+    "stft": {
+      "window": "periodic Hann",
+      "window_length_samples": 1024,
+      "hop_size_samples": 256,
+      "overlap_samples": 768,
+      "fft_size": 1024,
+      "sample_rate_hz": 44100,
+      "parameter_changes_allowed": false
+    },
+    "total_residual": {
+      "residual_stft": "D_c(f,t)",
+      "oracle_stft": "Y_c(f,t)",
+      "error_power": "P_err,c(f) = sum_song sum_t sum_ear |D_c(f,t)|^2",
+      "reference_power": "P_ref,c(f) = sum_song sum_t sum_ear |Y_c(f,t)|^2",
+      "relative_error_db": "Q_c(f) = 10 * log10(P_err,c(f) / P_ref,c(f))",
+      "zero_reference_bin": "STOP and amend frequency protocol; do not add epsilon",
+      "spatial_change": {
+        "moderate": "DeltaQ_moderate(f) = Q_moderate(f) - Q_colocated(f)",
+        "wide": "DeltaQ_wide(f) = Q_wide(f) - Q_colocated(f)"
+      },
+      "smoothing": "none by default; any display-only smoothing must accompany the unsmoothed scientific curve"
+    },
+    "stem_frequency": {
+      "rendered_error": "d_j",
+      "rendered_ground_truth": "g_j = H_j * s_j",
+      "relative_error_db": "Q_{j,c}(f) = 10 * log10(P_err,j,c(f) / P_gt,j,c(f))",
+      "rank4_vocals_rule": "relative spectrum is undefined because GT energy is zero; absolute estimated-error spectrum may be displayed separately",
+      "inactive_reference_label": "INACTIVE_REFERENCE",
+      "finite_value_fabrication_allowed": false
+    },
+    "descriptive_bands_hz": [
+      {"name": "Band 1", "lower_hz": 0, "upper_hz": 500},
+      {"name": "Band 2", "lower_hz": 500, "upper_hz": 2000},
+      {"name": "Band 3", "lower_hz": 2000, "upper_hz": 8000},
+      {"name": "Band 4", "lower_hz": 8000, "upper_hz": 20000}
+    ],
+    "bands_are_primary": false
+  },
+  "rq5_transient_localization": {
+    "mask_source": "pre-spatialization ground-truth mono mixture m(t) = sum_j s_j(t)",
+    "separator_or_condition_dependent": false,
+    "stft_matches_frequency_analysis": true,
+    "magnitude": "M(f,t) = |STFT(m)|",
+    "positive_spectral_flux": "F_t = sum_f max(M(f,t) - M(f,t-1), 0)^2",
+    "first_frame": "excluded from ranking because flux is undefined",
+    "ranking_per_song": [
+      "spectral flux descending",
+      "frame index ascending for exact ties"
+    ],
+    "high_transient_fraction": 0.2,
+    "high_transient_count": "ceil(0.20 * N_valid_frames)",
+    "classes": ["HIGH_TRANSIENT", "NON_HIGH_TRANSIENT"],
+    "metric": "10 * log10(sum residual STFT power / sum oracle STFT power) within each condition and frame class",
+    "aggregate_power_before_ratio": true,
+    "per_frame_ratio_average": false,
+    "status": "secondary exploratory",
+    "directional_hypothesis": null,
+    "alternative_percentiles_or_detectors_allowed_after_results": false
+  },
+  "robustness": {
+    "common_hrtf_controls": {
+      "angles_deg": [-80, -30, -10, 0, 10, 30, 80],
+      "control_count": 7,
+      "assignment_rule": "all four stems use the same listed angle",
+      "per_song_summary": "common_HRTF_median_R = median over the seven common-HRTF angles",
+      "primary_comparisons": [
+        "R_moderate versus common_HRTF_median_R",
+        "R_wide versus common_HRTF_median_R"
+      ],
+      "interpretation": "区分 HRTF direction 本身的 frequency weighting 与 stems 使用不同 HRTFs 的效应；不假定七个角度完全相同。"
+    },
+    "position_assignments": {
+      "source_order": ["bass", "vocals", "drums", "other"],
+      "moderate_angle_set_deg": [-30, -10, 10, 30],
+      "wide_angle_set_deg": [-80, -30, 30, 80],
+      "enumeration": "all bijections",
+      "assignment_count_per_condition": 24,
+      "random_sampling": false,
+      "canonical_assignment_occurrences_required": 1,
+      "metrics": [
+        "error_retention_ratio",
+        "cancellation_gain_db",
+        "normalized_total_error_energy"
+      ],
+      "normalized_total_error_energy": "T_c / ||y_oracle,c||^2",
+      "per_song_condition_summaries": ["min", "max", "mean", "median", "IQR"],
+      "canonical_summaries": ["canonical_assignment_metric", "canonical_percentile_within_24"],
+      "robustness_fraction": "fraction of 24 assignments with R greater than common_HRTF_median_R",
+      "interpretation_rule": "报告 assignment-robust tendency 或 source-position assignment sensitivity，不定义简单 scientific PASS/FAIL。"
+    }
+  },
+  "analysis_status": {
+    "confirmatory_primary": {
+      "question": "RQ3 loss of cross-stem cancellation mechanism",
+      "metric": "Error Retention Ratio R",
+      "comparisons": [
+        "R_moderate versus R_colocated",
+        "R_wide versus R_colocated",
+        "R_moderate versus common_HRTF_median_R",
+        "R_wide versus common_HRTF_median_R"
+      ]
+    },
+    "exploratory_attributive": [
+      "one-stem contribution",
+      "exact Shapley attribution",
+      "pairwise stem interactions",
+      "which stem dominates"
+    ],
+    "exploratory_localization": [
+      "continuous frequency regions",
+      "stem-frequency profiles",
+      "high-transient versus non-high-transient frames"
+    ],
+    "robustness": [
+      "seven common-HRTF controls",
+      "all 24 moderate assignments",
+      "all 24 wide assignments"
+    ]
+  },
+  "statistics": {
+    "sample_unit": "song",
+    "sample_size": 10,
+    "not_independent_units": ["stems", "ears", "frequency bins", "permutations"],
+    "primary_test": "paired exact two-sided binomial sign test",
+    "planned_implementation": "scipy.stats.binomtest",
+    "paired_difference_rule": "exclude exact-zero differences from sign count and report them as ties",
+    "reported_fields": [
+      "N_effective",
+      "positive_count",
+      "negative_count",
+      "tie_count",
+      "median_paired_difference",
+      "two_sided_exact_p_value"
+    ],
+    "multiplicity": {
+      "method": "Holm correction",
+      "family_size": 4,
+      "family": [
+        "R_moderate - R_colocated",
+        "R_wide - R_colocated",
+        "R_moderate - common_HRTF_median_R",
+        "R_wide - common_HRTF_median_R"
+      ]
+    },
+    "paired_data_display_required": true,
+    "mass_testing_prohibited": [
+      "frequency-bin p-values",
+      "post-hoc significance hunting over six pairwise interactions",
+      "individual hypothesis tests over 24 permutations"
+    ]
+  },
+  "planned_outputs": {
+    "roots": {
+      "phase2_7": "outputs/phase2/phase2_7_error_interaction",
+      "phase2_8": "outputs/phase2/phase2_8_stem_attribution",
+      "phase2_9": "outputs/phase2/phase2_9_spectrotemporal",
+      "phase2_10": "outputs/phase2/phase2_10_robustness",
+      "phase2_11": "outputs/phase2/phase2_11_synthesis"
+    },
+    "expected_future_row_counts": {
+      "canonical_interaction": 30,
+      "pairwise_interactions": 180,
+      "independent_attribution": 120,
+      "shapley_attribution": 120,
+      "common_hrtf_controls": 70,
+      "position_permutations": 480,
+      "transient_summary": 60
+    },
+    "frequency_bin_count_rule": "derive from fft_size and sample rate; do not freeze an incorrect count",
+    "tables": [
+      {
+        "phase": "2.7",
+        "path": "metrics/error_interaction_per_song_condition.csv",
+        "rows": 30,
+        "required_fields": [
+          "rank", "track", "condition", "A_individual_error_energy",
+          "T_total_error_energy", "I_interaction_energy",
+          "error_retention_ratio", "cancellation_gain_db"
+        ]
+      },
+      {
+        "phase": "2.7",
+        "path": "metrics/pairwise_error_interactions.csv",
+        "rows": 180
+      },
+      {
+        "phase": "2.8",
+        "path": "metrics/stem_independent_attribution.csv",
+        "rows": 120,
+        "required_fields": ["rank", "track", "condition", "stem", "reference_status", "single_stem_nre"]
+      },
+      {
+        "phase": "2.8",
+        "path": "metrics/stem_shapley_attribution.csv",
+        "rows": 120,
+        "required_fields": ["rank", "track", "condition", "stem", "reference_status", "single_stem_nre", "shapley_nre"]
+      },
+      {
+        "phase": "2.9",
+        "path": "metrics/frequency_error_profiles.csv",
+        "rows": "derived"
+      },
+      {
+        "phase": "2.9",
+        "path": "metrics/stem_frequency_error_profiles.csv",
+        "rows": "derived"
+      },
+      {
+        "phase": "2.9",
+        "path": "metrics/transient_vs_nontransient_error.csv",
+        "rows": 60
+      }
+    ],
+    "figures": [
+      "figures/rq3_error_retention_by_condition.png",
+      "figures/rq3_pairwise_interaction_heatmaps.png",
+      "figures/rq4_stem_independent_error.png",
+      "figures/rq4_shapley_attribution.png",
+      "figures/rq4_rank4_silent_vocals_case.png",
+      "figures/rq5_frequency_error_profiles.png",
+      "figures/rq5_stem_frequency_profiles.png",
+      "figures/rq5_transient_vs_nontransient.png",
+      "figures/robust_position_assignment_distributions.png"
+    ],
+    "figure_constraints": {
+      "rq3_trajectories": "show all ten paired song trajectories plus aggregate marker",
+      "interaction_heatmaps": "signed quantity with zero-centered scale",
+      "shapley": "negative values remain visible",
+      "permutations": "mark canonical assignment without result-based selection",
+      "existing_rank5_spectrogram": "qualitative illustration only; not a substitute for aggregate analysis"
+    }
+  },
+  "implementation_strategy": {
+    "renderer_reuse_required": [
+      "src/matlab/phase2/hrtf",
+      "src/matlab/phase2/spatial",
+      "src/matlab/phase2/comparison"
+    ],
+    "second_renderer_allowed": false,
+    "unique_azimuths_deg": [-80, -30, -10, 0, 10, 30, 80],
+    "precompute_per_song": [
+      "rendered ground-truth stem for each stem and unique azimuth",
+      "rendered error stem for each stem and unique azimuth"
+    ],
+    "combinations_reusing_precompute": [
+      "canonical conditions",
+      "common-HRTF controls",
+      "24 moderate permutations",
+      "24 wide permutations",
+      "16 exact Shapley coalitions"
+    ],
+    "cache_policy": "save scientific metrics, necessary arrays, and only predetermined visualisation/demo assets; do not cache redundant mixture WAVs",
+    "scientific_intermediate_quantization": false,
+    "demo_audio_separate_from_metrics": true,
+    "execution_policy": {
+      "matlab_mode": "non-interactive batch from repository root",
+      "repository_paths": "derive from repository root; no personal absolute paths in reusable code",
+      "figures": "hidden headless figures exported explicitly to PNG with complete labels and units",
+      "failure_status": "validation or computation failure must produce a non-zero process exit",
+      "signal_integrity_gates": [
+        "sample rate",
+        "combined binaural channel order",
+        "frame count",
+        "finite samples",
+        "peak amplitude and clipping risk"
+      ]
+    }
+  },
+  "future_phases": {
+    "2.7": "Error interaction and cancellation mechanism",
+    "2.8": "Stem-wise independent and exact-Shapley attribution",
+    "2.9": "Spectro-temporal localization",
+    "2.10": "Common-HRTF and source-position-assignment robustness",
+    "2.11": "Final Phase 2 synthesis and reproducible MATLAB research report",
+    "phase_3_not_started": true
+  },
+  "limitations": [
+    "only 10 songs",
+    "only one fixed 30 s excerpt per song",
+    "fixed CIPIC subject",
+    "one separator only",
+    "objective mechanism analysis without a formal perceptual study",
+    "rank 4 has an inactive ground-truth vocals reference",
+    "HRTF grid is limited to current exact directions",
+    "position permutations study assignment robustness rather than arbitrary continuous space",
+    "correlation and interaction do not establish human perceptual localization consequences"
+  ],
+  "readiness": {
+    "protocol_frozen_before_mechanism_results": true,
+    "parent_hash_verified_at_freeze": true,
+    "manifest_hash_verified_at_freeze": true,
+    "synthetic_validation_required": true,
+    "validator_path": "scripts/python/phase2/phase2_6_validate_mechanism_protocol.py",
+    "mechanism_execution_authorized_by_this_protocol": false,
+    "next_phase_after_commit": "Phase 2.7"
+  }
+}
