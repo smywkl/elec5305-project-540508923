@@ -14,6 +14,8 @@ import numpy as np
 SI_SDR_CAP_DB = 300.0
 FLOAT64_EPSILON = float(np.finfo(np.float64).eps)
 BSS_EVAL_FILTERS_LEN = 512
+REFERENCE_ACTIVE = "ACTIVE"
+REFERENCE_INACTIVE = "INACTIVE_REFERENCE"
 
 
 def _load_museval_bss_eval():
@@ -153,6 +155,93 @@ def mono_downmix(stereo: np.ndarray) -> np.ndarray:
     if not np.isfinite(mono).all():
         raise ValueError("mono output contains NaN or Inf")
     return mono
+
+
+def exact_reference_activity(reference: np.ndarray) -> tuple[float, str]:
+    """Classify a reference using its exact float64 sum-of-squares energy.
+
+    This intentionally has no epsilon or activity threshold. A reference is
+    inactive only when its decoded float64 samples have exactly zero energy.
+    """
+    reference_array = np.asarray(reference, dtype=np.float64).reshape(-1)
+    if reference_array.size == 0 or not np.isfinite(reference_array).all():
+        raise ValueError("reference must be nonempty and finite")
+    energy = float(np.sum(np.square(reference_array), dtype=np.float64))
+    if not np.isfinite(energy) or energy < 0.0:
+        raise ValueError("reference energy must be finite and nonnegative")
+    return energy, REFERENCE_ACTIVE if energy > 0.0 else REFERENCE_INACTIVE
+
+
+def source_metrics_with_inactive_references(
+    reference_sources: np.ndarray,
+    estimated_sources: np.ndarray,
+    source_names: tuple[str, ...] | list[str],
+) -> dict[str, object]:
+    """Evaluate active targets while preserving rows for exact-zero references.
+
+    Inputs have shape ``(sources, frames)``. SI-SDR keeps the established
+    per-source implementation. BSS Eval receives the active-source subset in
+    canonical relative order with permutation disabled by the existing helper.
+    """
+    references = np.asarray(reference_sources, dtype=np.float64)
+    estimates = np.asarray(estimated_sources, dtype=np.float64)
+    names = tuple(source_names)
+    if references.shape != estimates.shape or references.ndim != 2:
+        raise ValueError("source metric inputs must share shape (sources, frames)")
+    if references.shape[0] != len(names) or references.shape[1] == 0:
+        raise ValueError("source names and nonempty source arrays must agree")
+    if not np.isfinite(references).all() or not np.isfinite(estimates).all():
+        raise ValueError("source metric inputs contain NaN or Inf")
+
+    rows: list[dict[str, object]] = []
+    active_indices: list[int] = []
+    for index, name in enumerate(names):
+        reference = references[index]
+        estimate = estimates[index]
+        reference_energy, status = exact_reference_activity(reference)
+        estimate_energy = float(np.sum(np.square(estimate), dtype=np.float64))
+        row: dict[str, object] = {
+            "stem": name,
+            "reference_status": status,
+            "metric_status": status,
+            "reference_energy": reference_energy,
+            "estimated_energy": estimate_energy,
+            "reference_rms": float(np.sqrt(reference_energy / reference.size)),
+            "estimated_rms": float(np.sqrt(estimate_energy / estimate.size)),
+            "reference_peak": float(np.max(np.abs(reference))),
+            "estimated_peak": float(np.max(np.abs(estimate))),
+            "si_sdr_db": None,
+            "sir_db": None,
+        }
+        if status == REFERENCE_ACTIVE:
+            row["si_sdr_db"] = transparent_si_sdr_db(reference, estimate)
+            active_indices.append(index)
+        rows.append(row)
+
+    if len(active_indices) < 2:
+        raise ValueError("BSS Eval requires at least two active reference sources")
+    active_reference = references[active_indices, :, None]
+    active_estimate = estimates[active_indices, :, None]
+    bss_result = bss_eval_v4_whole_excerpt(active_reference, active_estimate)
+    sir_values = bss_result["sir"].reshape(-1)
+    for subset_index, source_index in enumerate(active_indices):
+        rows[source_index]["sir_db"] = float(sir_values[subset_index])
+
+    active_rows = [rows[index] for index in active_indices]
+    macro_si_sdr = float(np.mean([float(row["si_sdr_db"]) for row in active_rows]))
+    macro_sir = float(np.mean([float(row["sir_db"]) for row in active_rows]))
+    if not np.isfinite(macro_si_sdr) or not np.isfinite(macro_sir):
+        raise RuntimeError("active-source macro metric is nonfinite")
+    return {
+        "rows": rows,
+        "active_indices": active_indices,
+        "active_source_names": [names[index] for index in active_indices],
+        "active_stem_count": len(active_indices),
+        "inactive_stem_count": len(names) - len(active_indices),
+        "macro_si_sdr_db": macro_si_sdr,
+        "macro_sir_db": macro_sir,
+        "bss_eval": bss_result,
+    }
 
 
 def transparent_si_sdr_db(reference: np.ndarray, estimate: np.ndarray) -> float:

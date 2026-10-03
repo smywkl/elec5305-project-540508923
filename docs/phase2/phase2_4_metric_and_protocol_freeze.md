@@ -96,7 +96,7 @@ GT 输入为 `data/musdb18hq/train/Swinging Steaks - Lost My Way/{stem}.wav`；e
 
 本 development excerpt 只作描述性报告；由于只有一首歌，不计算 Pearson、Spearman 或 p-value。
 
-## Final static protocol v1.0
+## Final static protocol v1.0（historical parent）
 
 Canonical protocol：`config/phase2/static_experiment_protocol.json`
 
@@ -141,6 +141,25 @@ RQ2 以 `N = 10 songs` 为 observation unit，计算 macro SI-SDR / macro SIR �
 
 结果与 Phase 2.3 冻结记录一致；G cached estimates reused 为 true，exact excerpt alignment 为 true，official test used 为 false。Phase 2.1/2.2、MATLAB downstream implementation、HRTF 与 spatialisation definitions 均未修改。
 
-## Readiness gate
+## Readiness gate（v1.0 historical record）
 
 `museval` 安全安装、API 检查、synthetic SIR、identity permutation、真实 source SIR、macro SIR、SI-SDR unchanged、protocol/hash 更新和 Phase 2.3 regression 均通过。SIR blocker 已解决；当前 blocker 为 `null`，协议状态为 `READY FOR PHASE 2.5`。本任务没有开始 Phase 2.5。
+
+## Protocol v1.1 — exact silent-reference handling
+
+Phase 2.5 source-metric batch 在已经完成 rank 1–3 后，于 frozen rank 4 `Skelpolu - Resurrection` 的 `[30 s, 60 s)` excerpt 发现 vocals GT reference 为逐样本 exact zero。其 stereo L/R 与固定 mono downmix 的 float64 `sum(reference.^2)` 均为 `0`。这是 dataset/excerpt property，不是代码错误；对该 target，SI-SDR 的 projection denominator 和标准 BSS Eval SIR 均没有数学定义。
+
+因此协议从 parent `1.0` 修订为 `1.1`：
+
+- parent SHA-256：`54a27252bcba432f5fd1b62b108cdd28bb059201a5c482e604c687c703f3d9f0`
+- current SHA-256：`3ffa00c2b14a7dc8ab09e2d1578c4a8aba62368b5054d17b091cab4912a8d0f3`
+- `ACTIVE` 当且仅当 mono float64 `reference_energy = sum(reference.^2) > 0`；`INACTIVE_REFERENCE` 当且仅当该值精确等于 `0`。不使用 epsilon 或可调 threshold。
+- ACTIVE source 沿用 v1.0 SI-SDR 定义和完整 frozen museval BSS Eval v4 参数。SIR 输入只保留 active sources，并保持 canonical relative order；rank 4 为 `bass, drums, other`，identity permutation 为 `[0,1,2]`。
+- Inactive vocals 的 SI-SDR/SIR 在 CSV 中留空，以显式 `reference_status` / `metric_status = INACTIVE_REFERENCE` 说明；其 estimated RMS、peak、energy 仍作为 engineering diagnostics 保存，但不成为 RQ2 predictor。
+- 每首 macro SI-SDR 与 macro SIR 改为 ACTIVE stems 的非加权算术平均，并记录 `active_stem_count` / `inactive_stem_count`。不作 energy weighting。
+
+没有替换 rank 4、没有使用 rank 11、没有移动 excerpt。Final manifest 保持 byte-identical，selected tracks、source order、separator cache、HRTF、spatial configurations、downstream metrics 与 ACTIVE-source metric definitions 均不变。RQ1 仍使用全部 10 首歌。
+
+Primary RQ2 仍为 `N=10` songs，predictors 仅为 active-stem macro SI-SDR / macro SIR，conditions 仍为 moderate / wide。另在看到 downstream results 前预注册 supplementary sensitivity：只取 `active_stem_count == 4` 的 `N=9`，保留完整 `2 predictors × 3 outcomes × 2 conditions = 12` 行于 `metrics/rq2_spearman_sensitivity_complete4.csv`；无论结果变强或变弱均必须报告，且不替代 primary analysis。
+
+修订时序明确：修订决定前仅计算了 source metrics rank 1–3，并在 rank 4 发现 exact-zero vocals；尚未运行 final MATLAB 10-song downstream batch、final RQ1、final RQ2、official-test listening 或 final figures。因此本修订由 undefined-metric edge case 触发，不是根据 downstream 结果作选择。

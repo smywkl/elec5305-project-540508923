@@ -1,6 +1,27 @@
 {
-  "protocol_version": "1.0",
-  "status": "frozen_after_phase2_4",
+  "protocol_version": "1.1",
+  "status": "amended_for_exact_silent_reference_before_final_downstream_analysis",
+  "parent_protocol_version": "1.0",
+  "parent_protocol_sha256": "54a27252bcba432f5fd1b62b108cdd28bb059201a5c482e604c687c703f3d9f0",
+  "amendment_reason": "Exact-zero GT reference encountered in the frozen rank-4 [30 s, 60 s) excerpt; SI-SDR and BSS Eval SIR are undefined for that target.",
+  "amendment_scope": {
+    "manifest_unchanged": true,
+    "selected_tracks_unchanged": true,
+    "excerpt_unchanged": true,
+    "spatial_configurations_unchanged": true,
+    "downstream_metrics_unchanged": true,
+    "active_source_metric_definitions_unchanged": true
+  },
+  "amendment_timing": {
+    "source_metrics_computed_before_amendment_ranks": [1, 2, 3],
+    "silent_reference_discovered_at_rank": 4,
+    "final_matlab_10_song_downstream_batch_run": false,
+    "final_rq1_run": false,
+    "final_rq2_run": false,
+    "final_official_test_listening_run": false,
+    "final_result_figures_generated": false,
+    "basis": "Amendment was triggered by a mathematically undefined exact-zero target metric before any final downstream analysis, not by downstream result selection."
+  },
   "frozen_before_official_test": true,
   "freeze_date": "2026-09-30",
   "official_test_used": false,
@@ -97,7 +118,19 @@
   "source_metrics": {
     "final_predictors": ["macro_si_sdr_db", "macro_sir_db"],
     "save_per_stem": true,
-    "macro_aggregation": "unweighted arithmetic mean across four stems",
+    "reference_activity": {
+      "energy_definition": "reference_energy = sum(reference.^2) using the decoded mono float64 samples",
+      "active_rule": "ACTIVE if and only if reference_energy > 0",
+      "inactive_rule": "INACTIVE_REFERENCE if and only if reference_energy == 0",
+      "threshold": null
+    },
+    "inactive_reference_policy": {
+      "si_sdr_db": null,
+      "sir_db": null,
+      "csv_representation": "blank numeric fields with explicit reference_status and metric_status",
+      "estimated_diagnostics": ["estimated_rms", "estimated_peak", "estimated_energy"]
+    },
+    "macro_aggregation": "unweighted arithmetic mean over ACTIVE reference stems only",
     "si_sdr": {
       "status": "frozen_validated",
       "definition": "zero mean; alpha=dot(estimate,reference)/dot(reference,reference); target=alpha*reference; error=estimate-target; 10*log10((||target||^2+eps)/(||error||^2+eps))",
@@ -112,8 +145,9 @@
       "version": "0.4.1",
       "evaluation_scope": "whole 30-second excerpt; one result per source",
       "source_order": ["bass", "vocals", "drums", "other"],
-      "input_shape": "(4, N, 1)",
-      "identity_mapping": "bass->bass, vocals->vocals, drums->drums, other->other",
+      "input_shape": "(number of ACTIVE sources, N, 1)",
+      "active_subset_rule": "Retain ACTIVE sources in canonical relative order and omit INACTIVE_REFERENCE targets only from metric computation, not from stored rows.",
+      "identity_mapping": "Each ACTIVE source maps to itself in canonical relative order.",
       "parameters": {
         "window": "infinity",
         "hop": "infinity",
@@ -122,8 +156,8 @@
         "framewise_filters": false,
         "bsseval_sources_version": false
       },
-      "aggregation": "unweighted arithmetic mean across the four whole-excerpt source SIR values",
-      "permutation_requirement": "returned permutation must equal [0, 1, 2, 3]",
+      "aggregation": "unweighted arithmetic mean across ACTIVE whole-excerpt source SIR values",
+      "permutation_requirement": "returned permutation must be identity for the active subset",
       "wrapper_policy": "Do not use bss_eval_sources wrapper."
     }
   },
@@ -173,10 +207,19 @@
     "rq2": {
       "question": "Does source-separation quality predict downstream spatial fidelity?",
       "association": "Spearman rank correlation",
-      "predictors": ["macro_si_sdr_db", "macro_sir_db"],
+      "predictors": ["active-stem macro_si_sdr_db", "active-stem macro_sir_db"],
       "outcomes": ["binaural_si_sdr_mean_db", "relative_rmse_mean", "stft_logmag_mae_mean_db"],
       "primary_conditions": ["moderate", "wide"],
       "secondary_condition": "colocated",
+      "primary_sample": "N=10 songs, including rank 4 whose source predictors average its three ACTIVE stems",
+      "supplementary_sensitivity": {
+        "sample": "N=9 songs with active_stem_count == 4",
+        "exclusion": "rank 4 is excluded only from this supplementary sensitivity analysis",
+        "output": "metrics/rq2_spearman_sensitivity_complete4.csv",
+        "required_rows": 12,
+        "design": "2 predictors x 3 outcomes x 2 primary conditions",
+        "retention_rule": "Retain and report regardless of whether correlations are stronger or weaker than the primary analysis."
+      },
       "reporting": "Report Spearman rho and scatter plots; emphasize direction, magnitude, scatter, and consistency. Any p-value is descriptive only.",
       "phase2_4_correlation": "none"
     }
@@ -194,8 +237,8 @@
     "formal_listening_test": false
   },
   "readiness": {
-    "status": "READY FOR PHASE 2.5",
+    "status": "AMENDMENT VALIDATION REQUIRED BEFORE PHASE 2.5 RESUME",
     "blocker": null,
-    "basis": "Source SI-SDR and identity-fixed whole-excerpt museval BSS Eval v4 SIR were validated before official-test access."
+    "basis": "Protocol v1.1 preserves all frozen selections and definitions for ACTIVE sources while defining mathematically valid handling for the one exact-zero reference."
   }
 }
