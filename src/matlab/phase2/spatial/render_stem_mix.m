@@ -1,5 +1,7 @@
-function [binauralRaw, lookups, diagnostics] = render_stem_mix(monoStems, subject, conditionName, requestedAzimuthsDeg, requestedElevationDeg, maximumMismatchDeg)
+function [binauralRaw, lookups, diagnostics, renderedComponents] = render_stem_mix(monoStems, subject, conditionName, requestedAzimuthsDeg, requestedElevationDeg, maximumMismatchDeg)
 %RENDER_STEM_MIX Render and sum four aligned mono stems as point sources.
+%   The optional fourth output exposes the four already-rendered components
+%   without introducing a second HRTF lookup or convolution path.
 
 arguments
     monoStems (1, 1) struct
@@ -15,6 +17,7 @@ inputLength = [];
 binauralRaw = [];
 lookups = repmat(struct(), numel(stemNames), 1);
 stemDiagnostics = repmat(struct(), numel(stemNames), 1);
+renderedComponents = struct();
 
 for stemIndex = 1:numel(stemNames)
     stemName = stemNames(stemIndex);
@@ -42,6 +45,7 @@ for stemIndex = 1:numel(stemNames)
             conditionName, stemName, match.angular_mismatch_deg, maximumMismatchDeg);
     end
     [rendered, renderInfo] = render_static_binaural(mono, match.left_hrir, match.right_hrir);
+    renderedComponents.(fieldName) = rendered;
     if isempty(binauralRaw)
         binauralRaw = zeros(size(rendered));
     end
