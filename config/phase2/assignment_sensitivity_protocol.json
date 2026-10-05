@@ -1,0 +1,587 @@
+{
+  "protocol_version": "1.0",
+  "phase": "2.11a",
+  "status": "exploratory_frozen_after_phase2_10_before_assignment_decomposition",
+  "protocol_history": {
+    "pre_correction_draft_sha256": "3036d82c893aa93cfb78d692cb5e89ada5f4b9ac869bc60c99eff3b41c852a29",
+    "correction_type": "scientific protocol clarification before commit",
+    "correction_triggered_by_new_rq6_results": false,
+    "correction_scope": "separate R/K cancellation-state interpretation from V/U/W downstream-error decomposition; freeze component provenance and zero-energy pair policy"
+  },
+  "freeze_git": {
+    "branch": "main",
+    "head": "689ea9534731910b9633572ad75504d595ac3016",
+    "start_state_clean": true
+  },
+  "protocol_timing": {
+    "freeze_date": "2026-10-05",
+    "timezone": "Australia/Sydney",
+    "trigger": "Phase 2.10 observed assignment sensitivity after establishing assignment-robust mechanism direction.",
+    "status": "EXPLORATORY FOLLOW-UP",
+    "exact_statement": "post-Phase-2.10 explanatory analysis with analysis definitions frozen before stem-angle / pair-angle decomposition results were inspected",
+    "original_confirmatory_research_question": false,
+    "stem_angle_decomposition_results_inspected_before_freeze": false,
+    "pair_angle_decomposition_results_inspected_before_freeze": false,
+    "canonical_pair_decomposition_results_inspected_before_freeze": false
+  },
+  "parent_inputs": {
+    "mechanism_protocol": {
+      "path": "config/phase2/mechanism_analysis_protocol.json",
+      "version": "1.0",
+      "sha256": "3ab613f8e336cc64062c2f7467d4c898b688f3f49e820d584c93cd6475c4b0e0",
+      "unchanged_required": true
+    },
+    "static_protocol": {
+      "path": "config/phase2/static_experiment_protocol.json",
+      "version": "1.1",
+      "sha256": "3ffa00c2b14a7dc8ab09e2d1578c4a8aba62368b5054d17b091cab4912a8d0f3",
+      "unchanged_required": true
+    },
+    "final_manifest": {
+      "path": "config/phase2/final_test_manifest.json",
+      "version": "1.0",
+      "sha256": "90b95632b5dc88e96ddd13d72066e08f3a9b2174e06dce1bb72968de0bb595dc",
+      "unchanged_required": true
+    }
+  },
+  "phase2_10_frozen_inputs": {
+    "root": "outputs/phase2/phase2_10_robustness/metrics",
+    "byte_identical_required": true,
+    "files": [
+      {
+        "path": "outputs/phase2/phase2_10_robustness/metrics/position_assignment_permutations.csv",
+        "sha256": "5540793b7d41b2c4652c545c2ded4e0f9787c0e070912d69302bdf9387c76ad9",
+        "rows": 480
+      },
+      {
+        "path": "outputs/phase2/phase2_10_robustness/metrics/common_hrtf_controls.csv",
+        "sha256": "a425ead00a89289c831e7a22f66b0b1a98315b7512d35cf1dcac40083ae98ce7",
+        "rows": 70
+      },
+      {
+        "path": "outputs/phase2/phase2_10_robustness/metrics/common_hrtf_per_song_summary.csv",
+        "sha256": "b7261fdeaab10fc2afc17de525fff62bdbb92165bd523f71f1a073cefaaadbaf",
+        "rows": 10
+      },
+      {
+        "path": "outputs/phase2/phase2_10_robustness/metrics/position_assignment_summary.csv",
+        "sha256": "e5dac6103da6a7ea0540b67b012394fcaa43bb4d373f137bc3a470e5a758d588",
+        "rows": 20
+      },
+      {
+        "path": "outputs/phase2/phase2_10_robustness/metrics/assignment_robustness_summary.csv",
+        "sha256": "31746ff5e2916e73a3fbca6f84158888c4a2555c3f6c9d274d53120a20700a57",
+        "rows": 20
+      }
+    ]
+  },
+  "scope": {
+    "allowed": [
+      "formalize RQ6",
+      "freeze mathematical decomposition",
+      "freeze stem-angle analysis",
+      "freeze pairwise angle analysis",
+      "freeze canonical-assignment explanation",
+      "freeze outputs and figures",
+      "run synthetic validation",
+      "record exact Phase 2.10 input hashes"
+    ],
+    "prohibited": [
+      "summarize real stem-angle results",
+      "summarize real pair-angle results",
+      "select best or worst stem-angle combinations",
+      "compute real canonical pair decomposition",
+      "generate RQ6 scientific figures",
+      "modify Phase 2.10 results",
+      "modify mechanism protocol",
+      "modify static protocol",
+      "modify manifest",
+      "rerun HRTF rendering",
+      "rerun HTDemucs",
+      "commit",
+      "push"
+    ],
+    "real_rq6_results_computed": false,
+    "scientific_figures_generated": false
+  },
+  "research_questions": {
+    "RQ6": "Which stem-position pairings modulate the magnitude of differential-HRTF cancellation loss, and how do assignment-induced changes in individual rendered-error load and cross-stem interaction contribute to the resulting normalized downstream error?",
+    "RQ6a": "How does assignment change cancellation state and normalized downstream-error magnitude?",
+    "RQ6a_1": "How does assignment change K = I/A and therefore R?",
+    "RQ6a_2": "How do U and W contribute to assignment-dependent V?",
+    "RQ6b": "How do each stem's rendered-error energy and balanced marginal assignment R vary across the frozen angles?",
+    "RQ6c": "Which ordered stem-pair angle placements change pairwise retention relative to their matched common-filter baseline?",
+    "RQ6d": "Which six pair interactions and four stem energies explain the canonical assignment's deviation from the 24-permutation mean?"
+  },
+  "frozen_design": {
+    "song_count": 10,
+    "conditions": ["moderate", "wide"],
+    "source_order": ["bass", "vocals", "drums", "other"],
+    "angle_sets_deg": {
+      "moderate": [-30, -10, 10, 30],
+      "wide": [-80, -30, 30, 80]
+    },
+    "canonical_assignments_deg_in_source_order": {
+      "moderate": [-30, -10, 10, 30],
+      "wide": [-80, -30, 30, 80]
+    },
+    "permutations_per_song_condition": 24,
+    "enumeration": "all 4! bijections",
+    "random_sampling": false,
+    "stem_angle_assignment_count": 6,
+    "ordered_pair_angle_assignment_count": 2,
+    "unordered_stem_pairs_with_fixed_identity_direction": [
+      ["bass", "vocals"],
+      ["bass", "drums"],
+      ["bass", "other"],
+      ["vocals", "drums"],
+      ["vocals", "other"],
+      ["drums", "other"]
+    ],
+    "ordered_off_diagonal_angle_pairs_per_stem_pair": 12,
+    "angular_separations_deg": {
+      "moderate": [20, 40, 60],
+      "wide": [50, 60, 110, 160]
+    }
+  },
+  "rq6a_assignment_level_decomposition": {
+    "analysis_roles": {
+      "cancellation_state": {
+        "metrics": ["R", "K"],
+        "question": "How does source-position assignment change cross-stem cancellation or reinforcement?",
+        "exact_relation": "R = 1 + K",
+        "interpretation": "R and K are the same cancellation-state information under an additive constant of 1. Assignment variation in R is mathematically identical to assignment variation in K.",
+        "A_and_I_as_competing_explanations_of_R": false
+      },
+      "normalized_downstream_error_magnitude": {
+        "metrics": ["V", "U", "W"],
+        "question": "How are assignment-induced changes in actual normalized downstream error V associated with individual rendered-error load U and cross-stem interaction contribution W?",
+        "exact_relation": "V = U + W"
+      }
+    },
+    "prohibited_interpretation": "Do not ask whether A or I independently explains R more; R variation and K variation are mathematically identical because R = 1 + I/A.",
+    "definitions": {
+      "A_p": "sum_j ||d_j||^2",
+      "I_p": "2 * sum_{i<j} <d_i,d_j>",
+      "T_p": "A_p + I_p = ||sum_j d_j||^2",
+      "R_p": "T_p / A_p",
+      "K_p": "I_p / A_p",
+      "exact_identity": "R_p = 1 + K_p"
+    },
+    "K_interpretation": {
+      "negative": "net cancellation",
+      "zero": "neutral",
+      "positive": "net reinforcement"
+    },
+    "oracle_normalized": {
+      "E_oracle_p": "||y_oracle,p||^2",
+      "U_p": "A_p / E_oracle,p",
+      "W_p": "I_p / E_oracle,p",
+      "V_p": "T_p / E_oracle,p",
+      "exact_identity": "V_p = U_p + W_p",
+      "U_interpretation": "individual rendered-error load relative to Oracle",
+      "W_interpretation": "cross-stem interaction contribution relative to Oracle",
+      "V_interpretation": "actual total normalized downstream error"
+    },
+    "edge_cases": {
+      "A_p_exact_zero": "STOP: R_p and K_p are undefined; do not add epsilon",
+      "E_oracle_p_exact_zero": "STOP: U_p, W_p, and V_p are undefined; do not add epsilon"
+    }
+  },
+  "rq6b_stem_angle_marginals": {
+    "component_energy": "E_j(a) = ||d_{j,a}||^2",
+    "marginal_R": "M_R(song, condition, stem, angle) = median R across the 6 assignments where that stem occupies that angle",
+    "additional_descriptive_statistics": ["mean", "min", "max", "IQR"],
+    "assignment_count_required": 6,
+    "design": "balanced exhaustive marginal descriptive effect",
+    "causal_main_effect": false,
+    "interpretation_guard": "Other stems still vary across the remaining angles; do not claim that the angle causes the outcome."
+  },
+  "rq6c_pairwise_angle_mechanism": {
+    "pair_retention": {
+      "symbol": "P_ij(a,b)",
+      "definition": "||d_i,a + d_j,b||^2 / (||d_i,a||^2 + ||d_j,b||^2)",
+      "expanded_identity": "P_ij(a,b) = 1 + 2<d_i,a,d_j,b> / (||d_i,a||^2 + ||d_j,b||^2)",
+      "interpretation": {
+        "less_than_1": "pairwise cancellation",
+        "equal_to_1": "neutral",
+        "greater_than_1": "pairwise reinforcement"
+      },
+      "nonnegative": true,
+      "clamp_scientific_values": false,
+      "zero_energy_edge_case": {
+        "condition": "||d_i,a||^2 + ||d_j,b||^2 == 0",
+        "pair_retention_ratio_status": "undefined",
+        "epsilon_allowed": false,
+        "official_test_action": "STOP and review protocol edge case"
+      }
+    },
+    "cosine_alignment": {
+      "symbol": "C_ij(a,b)",
+      "definition": "<d_i,a,d_j,b> / (||d_i,a|| ||d_j,b||)",
+      "exact_zero_norm_status": "undefined",
+      "epsilon_allowed": false
+    },
+    "matched_common_pair_baseline": {
+      "symbol": "P_common_matched(i,j,a,b)",
+      "scope": "differential angle pairs with a != b",
+      "definition": "0.5 * [P_ij(a,a) + P_ij(b,b)]",
+      "undefined_input_policy": "If either required matched P is undefined, P_common_matched and L are undefined and official-test analysis must STOP and review the protocol edge case."
+    },
+    "differential_pair_retention_change": {
+      "symbol": "L_ij(a,b)",
+      "definition": "P_ij(a,b) - P_common_matched(i,j,a,b)",
+      "primary_pair_placement_metric": true,
+      "positive": "different filters retain more pairwise error than the matched same-filter pair baseline",
+      "negative": "differential pairing has stronger pairwise cancellation than the matched common baseline"
+    },
+    "angular_separation": "|a_i - a_j|",
+    "separation_analysis": "descriptive summaries over actual discrete separations only",
+    "causal_regression": false,
+    "monotonic_separation_assumption": false
+  },
+  "rq6d_canonical_assignment_explanation": {
+    "pair_interaction": {
+      "J_ij_p": "2<d_i,d_j> / A_p",
+      "identity": "R_p - 1 = sum_{i<j} J_ij,p",
+      "mean_J_all24": "arithmetic mean of J_ij over all 24 assignments",
+      "delta_J_canonical": "J_canonical - mean_J_all24",
+      "exact_gate": "sum_pairs delta_J_canonical = R_canonical - mean_R_all24",
+      "summary_center_required": "mean",
+      "median_allowed_for_exact_decomposition": false,
+      "tolerance": 1e-10
+    },
+    "stem_energy": {
+      "E_j_canonical": "rendered-error energy for stem j at its canonical angle",
+      "mean_E_j_all_angles": "arithmetic mean of E_j(a) across the four frozen angles",
+      "delta_E_j_canonical": "E_j,canonical - mean_angle E_j(angle)",
+      "exact_gate": "sum_j delta_E_j_canonical = A_canonical - mean_A_all24",
+      "tolerance": 1e-10
+    },
+    "separation_of_explanations": "Stem-energy deltas explain own rendered-error load; pair-interaction deltas explain cancellation or reinforcement. Do not conflate them."
+  },
+  "analysis_policy": {
+    "status": "EXPLORATORY FOLLOW-UP",
+    "confirmatory_p_values": false,
+    "significance_tests": false,
+    "forbidden": [
+      "stem-angle t-tests",
+      "pair-angle p-values",
+      "multiple-comparison fishing",
+      "best-angle significance claims",
+      "selecting only extreme songs",
+      "redefining angle groups after results"
+    ],
+    "evidence_style": [
+      "exact exhaustive structure",
+      "descriptive effect sizes",
+      "cross-song distributions",
+      "mathematical decomposition"
+    ],
+    "interpretation_hierarchy": [
+      "Describe assignment-induced changes in cancellation state using R/K, recognizing their exact affine equivalence R = 1 + K.",
+      "Decompose assignment-dependent normalized downstream error V into individual rendered-error load U and interaction contribution W.",
+      "Describe which balanced stem-angle marginals systematically shift R.",
+      "Describe which pair-angle configurations weaken pair cancellation most.",
+      "Explain canonical assignment percentile through pair interactions and stem energies."
+    ]
+  },
+  "planned_summaries": {
+    "stem_angle_across_songs": {
+      "grouping": ["condition", "stem", "angle_deg"],
+      "statistics": ["mean", "median", "SD", "IQR", "min", "max"],
+      "primary_visual_marker": "median"
+    },
+    "pair_angle_across_songs": {
+      "grouping": ["condition", "stem_i", "stem_j", "angle_i", "angle_j"],
+      "statistics": ["median P", "median L", "median cosine", "IQR L"],
+      "inferential_test": false
+    },
+    "separation": {
+      "grouping": ["condition", "stem_i", "stem_j", "angular_separation_deg"],
+      "statistics": ["observation_count", "median P", "median L", "IQR L"],
+      "shared_separation_observations_disclosed": true
+    },
+    "canonical": {
+      "grouping": ["song", "condition"],
+      "fields": ["canonical_R_percentile", "canonical_R - mean_R_all24", "six delta_J contributions", "four delta_E contributions"]
+    }
+  },
+  "planned_outputs": {
+    "root": "outputs/phase2/phase2_11_assignment_sensitivity",
+    "tables": [
+      {
+        "path": "metrics/rq6_assignment_decomposition.csv",
+        "rows": 480,
+        "fields": ["rank", "track", "condition", "permutation_id", "angles", "A", "I", "T", "R", "oracle_energy", "V", "K", "U", "W"]
+      },
+      {
+        "path": "metrics/rq6_stem_angle_marginals.csv",
+        "rows": 320,
+        "fields": ["rank", "track", "condition", "stem", "angle_deg", "assignment_count", "rendered_error_energy", "R_mean", "R_median", "R_IQR", "R_min", "R_max"]
+      },
+      {
+        "path": "metrics/rq6_pair_angle_retention.csv",
+        "rows": 1440,
+        "fields": ["rank", "track", "condition", "stem_i", "stem_j", "angle_i", "angle_j", "angular_separation_deg", "energy_i", "energy_j", "inner_product", "pair_retention_ratio", "cosine_alignment", "matched_common_pair_retention", "differential_pair_retention_change"]
+      },
+      {
+        "path": "metrics/rq6_canonical_pair_decomposition.csv",
+        "rows": 120,
+        "fields": ["rank", "track", "condition", "stem_i", "stem_j", "canonical_angle_i", "canonical_angle_j", "J_canonical", "mean_J_all24", "delta_J_canonical", "canonical_R", "mean_R_all24", "canonical_R_percentile"]
+      },
+      {
+        "path": "metrics/rq6_canonical_stem_energy_decomposition.csv",
+        "rows": 80,
+        "fields": ["rank", "track", "condition", "stem", "canonical_angle_deg", "E_j_canonical", "mean_E_j_all_angles", "delta_E_j_canonical", "A_canonical", "mean_A_all24"]
+      }
+    ],
+    "expected_future_row_counts": {
+      "assignment_decomposition": 480,
+      "stem_angle_marginals": 320,
+      "pair_angle_retention": 1440,
+      "canonical_pair_decomposition": 120,
+      "canonical_stem_energy_decomposition": 80
+    },
+    "figures": [
+      {
+        "path": "figures/rq6_stem_angle_marginal_R.png",
+        "requirement": "Moderate and Wide separated; stem by angle conditional median R with clear numeric or legend encoding."
+      },
+      {
+        "path": "figures/rq6_pair_retention_heatmaps_moderate.png",
+        "requirement": "Six stem-pair panels; angle_i by angle_j; median P across songs; diagonal may show same-filter baseline."
+      },
+      {
+        "path": "figures/rq6_pair_retention_heatmaps_wide.png",
+        "requirement": "Six stem-pair panels; angle_i by angle_j; median P across songs; diagonal may show same-filter baseline."
+      },
+      {
+        "path": "figures/rq6_differential_pair_change.png",
+        "requirement": "Signed median L with a symmetric zero-centered scale shared by all six pairs within each condition."
+      },
+      {
+        "path": "figures/rq6_canonical_pair_decomposition.png",
+        "requirement": "Signed six-delta_J composition per song for Moderate and Wide; do not use absolute bars."
+      }
+    ],
+    "optional_figure": {
+      "path": "figures/rq6_canonical_stem_energy_decomposition.png",
+      "required_for_completion": false
+    },
+    "figure_scale_policy": "L heatmaps use one symmetric zero-centered scale across six pairs within a condition; Moderate and Wide may use different clearly labelled symmetric scales."
+  },
+  "validation_gates": {
+    "tolerance": 1e-10,
+    "synthetic_tests": {
+      "A": "R = 1 + K",
+      "B": "V = U + W",
+      "C": "P = 1 + 2 inner/(Ei+Ej)",
+      "D": "P >= 0 up to numerical tolerance",
+      "E": "identical cancelling vectors can produce P approaching 0",
+      "F": "aligned vectors produce P > 1",
+      "G": "matched common baseline equals 0.5 * [P(a,a) + P(b,b)]",
+      "H": "L has the signed direction P_differential - P_common_matched",
+      "I": "each stem-angle count is 6 in 24 permutations",
+      "J": "each ordered stem-pair angle-pair count is 2",
+      "K": "Moderate nonzero separations are exactly 20, 40, 60 degrees",
+      "L": "Wide nonzero separations are exactly 50, 60, 110, 160 degrees",
+      "M": "sum J = R - 1",
+      "N": "canonical delta_J decomposition is exact",
+      "O": "canonical delta_E decomposition is exact",
+      "P": "assignment-to-assignment variation in R equals variation in K because the additive constant is 1",
+      "Q": "scaling every d_j by one common nonzero scalar changes A, I, and T by the scalar squared but leaves R and K unchanged",
+      "R": "under the same common scaling, U, W, and V all scale consistently by the scalar squared",
+      "S": "an exact-zero pair-energy denominator returns explicit undefined status without epsilon regularization"
+    },
+    "real_data_structure": {
+      "song_condition_groups": 20,
+      "permutations_per_group": 24,
+      "canonical_assignments_per_group": 1,
+      "all_input_hashes_match": true
+    }
+  },
+  "component_source_provenance": {
+    "phase2_10_persisted_component_cache": {
+      "exists": false,
+      "mat_file_count": 0,
+      "component_cache_files": [],
+      "component_cache_hashes": [],
+      "expected_song_count": 10,
+      "finding": "Phase 2.10 creates gtComponents and errorComponents only as in-memory 4 x 7 cell arrays inside process_track and does not persist them; its track outputs contain CSV and JSON only.",
+      "phase2_11b_reuse_claim_allowed": false
+    },
+    "phase2_10_in_memory_component_schema": {
+      "variables": ["gtComponents", "errorComponents"],
+      "cell_dimensions": [4, 7],
+      "stem_axis": ["bass", "vocals", "drums", "other"],
+      "angle_axis_deg": [-80, -30, -10, 0, 10, 30, 80],
+      "cell_value": "finite double [rendered_frames x 2] combined-binaural component",
+      "gt_components_per_song": 28,
+      "error_components_per_song": 28,
+      "expected_song_count": 10
+    },
+    "only_allowed_phase2_11b_reconstruction_path": {
+      "reconstruction_required": true,
+      "reconstruction_executed_in_phase2_11a": false,
+      "renderer_source_git_head": "689ea9534731910b9633572ad75504d595ac3016",
+      "ground_truth_source": {
+        "path_pattern": "data/musdb18hq/test/<manifest track_name>/<stem>.wav",
+        "selection_authority": "config/phase2/final_test_manifest.json",
+        "loader": "src/matlab/phase2/oracle/load_musdb_gt_excerpt.m"
+      },
+      "estimated_source": {
+        "path_pattern": "outputs/phase2/phase2_5_final/cache/htdemucs_ft/<manifest track_name>/<stem>.wav",
+        "completion_schema": "phase2_5b_track_completion_v1",
+        "loader": "src/matlab/phase2/comparison/load_final_cached_excerpt.m",
+        "loader_must_validate_stem_sha256": true,
+        "expected_song_count": 10,
+        "completion_files": [
+          {
+            "rank": 1,
+            "track": "BKS - Bulldozer",
+            "path": "outputs/phase2/phase2_5_final/cache/htdemucs_ft/BKS - Bulldozer/completion.json",
+            "sha256": "30bd2e2a10b01d43eddd6c74764afb9b1a25517dcf81c31041223aac691c3dba"
+          },
+          {
+            "rank": 2,
+            "track": "Secretariat - Over The Top",
+            "path": "outputs/phase2/phase2_5_final/cache/htdemucs_ft/Secretariat - Over The Top/completion.json",
+            "sha256": "d63c2c69210c343f193273a265a30562145e483992bb3bda9c1fed1c3211b5a0"
+          },
+          {
+            "rank": 3,
+            "track": "Punkdisco - Oral Hygiene",
+            "path": "outputs/phase2/phase2_5_final/cache/htdemucs_ft/Punkdisco - Oral Hygiene/completion.json",
+            "sha256": "a514bc009656dd84d358840f52dac3840a315c53e0641b6de1b05b41b93a3764"
+          },
+          {
+            "rank": 4,
+            "track": "Skelpolu - Resurrection",
+            "path": "outputs/phase2/phase2_5_final/cache/htdemucs_ft/Skelpolu - Resurrection/completion.json",
+            "sha256": "b05e2a00292f7d5a2fd4c2ec36bb5f2bc9bdf5e16c32eb640df52ef0cca4b6ce"
+          },
+          {
+            "rank": 5,
+            "track": "Zeno - Signs",
+            "path": "outputs/phase2/phase2_5_final/cache/htdemucs_ft/Zeno - Signs/completion.json",
+            "sha256": "1071a2fc1614a076530326ce639c94fa848ecacec3e8192025e90471ffc831f0"
+          },
+          {
+            "rank": 6,
+            "track": "Moosmusic - Big Dummy Shake",
+            "path": "outputs/phase2/phase2_5_final/cache/htdemucs_ft/Moosmusic - Big Dummy Shake/completion.json",
+            "sha256": "339b1a306e8a2299f5e8a76a036c2f78ae3dcfa69a866a29f0843b58851d53c5"
+          },
+          {
+            "rank": 7,
+            "track": "Louis Cressy Band - Good Time",
+            "path": "outputs/phase2/phase2_5_final/cache/htdemucs_ft/Louis Cressy Band - Good Time/completion.json",
+            "sha256": "41652641adc64ee3546dcaefb9b1fa49de2e0dc5069942531c0d7c7810143caa"
+          },
+          {
+            "rank": 8,
+            "track": "Al James - Schoolboy Facination",
+            "path": "outputs/phase2/phase2_5_final/cache/htdemucs_ft/Al James - Schoolboy Facination/completion.json",
+            "sha256": "d710aef1245d8c3fd3bb075922a3ab4dd4b94c824f639d46c4ff6edff643455f"
+          },
+          {
+            "rank": 9,
+            "track": "We Fell From The Sky - Not You",
+            "path": "outputs/phase2/phase2_5_final/cache/htdemucs_ft/We Fell From The Sky - Not You/completion.json",
+            "sha256": "cf5e20dd32c9190e9626af77bb192181912d2619f0926c3b8896a9f9b4e00acd"
+          },
+          {
+            "rank": 10,
+            "track": "Ben Carrigan - We'll Talk About It All Tonight",
+            "path": "outputs/phase2/phase2_5_final/cache/htdemucs_ft/Ben Carrigan - We'll Talk About It All Tonight/completion.json",
+            "sha256": "0c23fbc61109b2ab8b338949115284b3bfb5aea3802cfa8e248e357db5a7e6e3"
+          }
+        ]
+      },
+      "excerpt": {
+        "start_seconds": 30,
+        "end_seconds_exclusive": 60,
+        "sample_rate_hz": 44100,
+        "input_frames": 1323000,
+        "stereo_to_mono": "x_mono = 0.5 * (x_L + x_R)",
+        "error_source": "estimated_mono - ground_truth_mono"
+      },
+      "hrtf": {
+        "dataset": "CIPIC",
+        "subject": "subject_003",
+        "path": "data/hrtf/cipic/subject_003.sofa",
+        "sha256": "a9db5f938ed1113b118dcbeb43f5fe1b27b9e191d1bbdb63fbc4803b6959b220",
+        "elevation_deg": 0,
+        "angles_deg": [-80, -30, -10, 0, 10, 30, 80],
+        "lookup": "exact grid only; zero angular mismatch; no interpolation"
+      },
+      "rendering": {
+        "convolution": "full linear convolution",
+        "output_length": "N + L - 1",
+        "channel_order": ["left", "right"],
+        "summation_order": ["bass", "vocals", "drums", "other"],
+        "second_renderer_allowed": false
+      },
+      "source_files": [
+        {
+          "path": "scripts/matlab/phase2/phase2_10_run_robustness_controls.m",
+          "sha256": "c8f05ec53647ffb76c6e49b468433352d6a7a11c8c5febaf7f59bcbc40fc247a"
+        },
+        {
+          "path": "src/matlab/phase2/oracle/load_musdb_gt_excerpt.m",
+          "sha256": "55b7dcd987b662eaed79731d7e3554d9f7edc58522209be2e14368017d9f725e"
+        },
+        {
+          "path": "src/matlab/phase2/comparison/load_final_cached_excerpt.m",
+          "sha256": "595d145857b026b089a4ef3d704ac3b0963cac277507e47d758fd6d4ad787a5d"
+        },
+        {
+          "path": "src/matlab/phase2/oracle/downmix_stereo_to_mono.m",
+          "sha256": "f8ac8ad3b643dc7b5bf2bc0377580d0af4589df9a037237a1cb9ccd2513b15fa"
+        },
+        {
+          "path": "src/matlab/phase2/hrtf/load_cipic_subject.m",
+          "sha256": "06e73595b8475392c7cf5f8826a0792792b392c24c7ef879f63c39e19b330778"
+        },
+        {
+          "path": "src/matlab/phase2/hrtf/find_hrir_direction.m",
+          "sha256": "a2555e3c4c6c44f77894852974c64df8b3b07d9c151f3e787a220be8c845f354"
+        },
+        {
+          "path": "src/matlab/phase2/hrtf/render_static_binaural.m",
+          "sha256": "82710f9379c4770313ad0bb4e97e272cd1890c80cfbf37f38bbb1226ca8dcf8e"
+        },
+        {
+          "path": "src/matlab/phase2/comparison/precompute_stem_angle_components.m",
+          "sha256": "fbb3952d62b95370d28cad0d1463e11c8bdc83255eb1607b98c78c33822509cd"
+        },
+        {
+          "path": "src/matlab/phase2/comparison/evaluate_error_component_assignment.m",
+          "sha256": "fd7170883ea87f3acccbbd1a761c0cd2e8242cdfabb87d2343eefffbefea8c83"
+        }
+      ]
+    }
+  },
+  "implementation_boundary": {
+    "preferred_inputs": "Reuse the frozen Phase 2.10 CSVs. No persistent rendered-component MAT cache exists, so component-level Phase 2.11b metrics require the single frozen reconstruction path recorded in component_source_provenance.",
+    "separator_rerun": false,
+    "convolution_rerun_in_phase2_11a": false,
+    "phase2_11b_component_reconstruction_allowed": true,
+    "reconstruction_constraint": "Use only the frozen GT and estimated excerpts, subject_003, exact frozen angles, committed renderer source at the freeze Git HEAD, the frozen mono conversion, and full linear convolution.",
+    "full_shapley_over_480_permutations": false,
+    "frequency_by_assignment_analysis": false,
+    "phase2_10_outputs_modified": false,
+    "previous_phase_outputs_modified": false
+  },
+  "future_phase_2_11b": {
+    "authorized_by_this_protocol": false,
+    "boundary": "After this protocol is committed, a separate Phase 2.11b task may compute only the frozen assignment, stem-angle, pair-angle, and canonical decompositions.",
+    "results_directory": "outputs/phase2/phase2_11_assignment_sensitivity"
+  },
+  "readiness": {
+    "protocol_only": true,
+    "real_rq6_results_computed": false,
+    "ready_for_commit_only_after_validator_and_tests_pass": true
+  }
+}
