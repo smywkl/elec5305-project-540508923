@@ -1,20 +1,23 @@
-# Data
+# Local Data Layout
 
-Large datasets and copyrighted music should not be committed directly to this repository.
-
-Planned data sources:
-
-- **MUSDB18** for source-separation evaluation with reference stems
-- **CIPIC HRTF Database** for HRIR/HRTF measurements
-- Additional legally usable stereo music excerpts for listening demonstrations
-
-Expected local structure:
+Large datasets, copyrighted audio and HRTF measurement files are not stored in Git. Place local data under this directory using the structure below:
 
 ```text
 data/
-├── musdb18/
-├── cipic/
-└── demo_audio/
+├── musdb18hq/
+│   ├── train/
+│   └── test/
+├── hrtf/
+│   └── cipic/
+│       └── subject_003.sofa
+└── demo/                 optional local input audio
 ```
 
-These folders may be excluded from Git because of size or licensing restrictions.
+## Required Data
+
+- **MUSDB18-HQ:** lossless stereo mixtures and the vocals, drums, bass and other reference stems. Phase 1 validation and Phase 2 use this local dataset.
+- **CIPIC HRTF Database:** Phase 2 uses the SOFA file for `subject_003` at `data/hrtf/cipic/subject_003.sofa`.
+
+The frozen Phase 2 test selection and excerpt definitions are recorded in [`../config/phase2/final_test_manifest.json`](../config/phase2/final_test_manifest.json). Generated estimates, metrics, figures, audio and caches are written below `outputs/` and are also excluded from Git.
+
+Users are responsible for obtaining the datasets under their applicable licences. Do not commit dataset audio, HRTF files or demonstration recordings.
