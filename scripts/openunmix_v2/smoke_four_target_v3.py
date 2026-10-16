@@ -11,7 +11,6 @@ from pathlib import Path
 import torch
 
 from pipeline import (
-    CHUNK_FRAMES,
     MUSDB_TRAIN,
     PROJECT_ROOT,
     SAMPLES_PER_EPOCH_EQUIVALENT,

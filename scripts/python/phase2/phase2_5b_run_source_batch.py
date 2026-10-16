@@ -156,7 +156,7 @@ def read_json(path: Path) -> dict[str, Any]:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
-        raise RuntimeError(f"无法读取合法 JSON：{path}") from error
+        raise RuntimeError(f"Cannot read valid JSON: {path}") from error
 
 
 def atomic_json(path: Path, value: dict[str, Any]) -> None:
@@ -211,16 +211,16 @@ def validate_output_paths() -> None:
 
 
 def inspect_mixture_header(path: Path) -> tuple[int, float]:
-    require(path.is_file(), f"缺少 official-test mixture：{path}")
+    require(path.is_file(), f"Missing official-test mixture: {path}")
     info = sf.info(path)
-    require(info.samplerate == SAMPLE_RATE, f"mixture sample rate 不是 44100 Hz：{path}")
-    require(info.channels == CHANNELS, f"mixture 不是 stereo：{path}")
-    require(info.frames >= 60 * SAMPLE_RATE, f"mixture 少于 60 秒：{path}")
+    require(info.samplerate == SAMPLE_RATE, f"Mixture sample rate must be 44100 Hz: {path}")
+    require(info.channels == CHANNELS, f"Mixture must be stereo: {path}")
+    require(info.frames >= 60 * SAMPLE_RATE, f"Mixture is shorter than 60 seconds: {path}")
     return int(info.frames), float(info.frames / info.samplerate)
 
 
 def verify_protocol_and_manifest() -> tuple[dict[str, Any], dict[str, Any], tuple[Track, ...]]:
-    require(PROTOCOL_PATH.is_file(), f"缺少 frozen protocol：{PROTOCOL_PATH}")
+    require(PROTOCOL_PATH.is_file(), f"Missing frozen protocol: {PROTOCOL_PATH}")
     actual_protocol_hash = sha256_file(PROTOCOL_PATH)
     require(
         actual_protocol_hash == PROTOCOL_SHA256,
@@ -230,7 +230,7 @@ def verify_protocol_and_manifest() -> tuple[dict[str, Any], dict[str, Any], tupl
     require(protocol.get("protocol_version") == PROTOCOL_VERSION, "protocol version mismatch")
     require(protocol.get("frozen_before_official_test") is True, "protocol is not frozen")
 
-    require(MANIFEST_PATH.is_file(), f"缺少 final test manifest：{MANIFEST_PATH}")
+    require(MANIFEST_PATH.is_file(), f"Missing final test manifest: {MANIFEST_PATH}")
     actual_manifest_hash = sha256_file(MANIFEST_PATH)
     require(
         actual_manifest_hash == MANIFEST_SHA256,

@@ -9,8 +9,9 @@ The current repository contains a completed source-separation stage and a comple
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Source separation with official pretrained HTDemucs-FT | **Complete** |
-| 2 | Fixed-HRTF rendering and separation-error mechanism study | **Complete through Phase 2.11** |
-| 3 | Small cross-HRTF-subject robustness extension | **Planned** |
+| 2 | Fixed-HRTF rendering and separation-error mechanism study | **Complete / Frozen through Phase 2.11** |
+| 3.0 | Engineering audit and minimal cleanup | **Complete through Phase 3.0b** |
+| 3 | Small cross-HRTF-subject robustness extension | **Not started** |
 | 4 | Dynamic spatialisation, listening examples and lightweight demo/UI | **Planned** |
 
 ## Project Pipeline
@@ -103,7 +104,9 @@ The [architecture note](docs/architecture.md) gives the current component bounda
 
 ## Reproducing the Work
 
-The Python environment is specified by [`environment.yml`](environment.yml) and [`requirements.txt`](requirements.txt). Python owns HTDemucs-FT inference, source metrics, aggregation and statistical analysis. MATLAB owns HRTF loading, convolution, binaural rendering and the core DSP/mechanism computations. The project does not claim a single-command full reproduction.
+The source-separation environment is specified by [`environment.yml`](environment.yml) and [`requirements.txt`](requirements.txt). Python owns HTDemucs-FT inference, source metrics, aggregation and statistical analysis. MATLAB owns HRTF loading, convolution, binaural rendering and the core DSP/mechanism computations. The project does not claim a single-command full reproduction.
+
+Frozen Phase 2 source metrics additionally require `museval==0.4.1` and, on Windows, `ffmpeg` and `ffprobe` in the selected Conda runtime. The current environment files do not fully provision these requirements; preserve the validated local runtime when checking frozen results.
 
 Local data must follow [`data/README.md`](data/README.md): MUSDB18-HQ under `data/musdb18hq/` and CIPIC `subject_003.sofa` under `data/hrtf/cipic/`. Large datasets, model caches, audio and generated outputs are intentionally not stored in Git.
 

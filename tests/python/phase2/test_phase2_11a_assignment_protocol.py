@@ -1,7 +1,7 @@
-"""Phase 2.11a assignment-sensitivity protocol 与 synthetic regression tests。
+"""Regression tests for the Phase 2.11a protocol and synthetic identities.
 
-测试只验证 frozen JSON、Phase 2.10 CSV 的字节哈希/排列结构和 tiny synthetic
-arrays；不会读取真实 rendered components 或计算任何 RQ6 scientific result。
+Check frozen JSON, Phase 2.10 CSV hashes and assignment structure, and tiny
+synthetic arrays. Do not read real rendered components or compute RQ6 results.
 """
 
 from __future__ import annotations

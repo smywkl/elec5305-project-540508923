@@ -19,8 +19,9 @@ Per-stem HRTF/HRIR rendering (MATLAB)
         v
 Binaural stem summation
         |
-        +-- Phase 2: fixed-HRTF error and mechanism analysis [complete]
-        +-- Phase 3: small cross-subject robustness extension [planned]
+        +-- Phase 2: fixed-HRTF error and mechanism analysis [complete/frozen]
+        +-- Phase 3.0: engineering audit and minimal cleanup [complete]
+        +-- Phase 3: small cross-subject robustness extension [not started]
         +-- Phase 4: dynamic trajectories, smooth transitions and demo [planned]
 ```
 

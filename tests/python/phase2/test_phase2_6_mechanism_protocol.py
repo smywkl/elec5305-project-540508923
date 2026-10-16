@@ -1,7 +1,7 @@
-"""Phase 2.6 mechanism protocol 与 synthetic decomposition regression tests。
+"""Regression tests for the Phase 2.6 protocol and synthetic decomposition.
 
-这些测试只读取 JSON 配置并使用 tiny synthetic arrays；不会读取 official-test
-波形、运行 separator，或计算 Phase 2.7--2.10 scientific results。
+Read only JSON configurations and tiny synthetic arrays. Do not read official-test
+audio, run a separator, or compute Phase 2.7--2.10 scientific results.
 """
 
 from __future__ import annotations

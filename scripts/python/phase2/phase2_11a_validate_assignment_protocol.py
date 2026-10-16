@@ -1,8 +1,8 @@
-"""验证 Phase 2.11a assignment-sensitivity protocol 与 synthetic 数学门禁。
+"""Validate the Phase 2.11a protocol and synthetic identities.
 
-本脚本只读取冻结 JSON、五个 Phase 2.10 CSV 的哈希/结构/排列标识，并使用
-tiny synthetic arrays 验证 A--S。它不会读取真实 rendered components，不会汇总
-stem-angle 或 pair-angle scientific effects，也不会生成 RQ6 结果或图。
+Read frozen JSON and five Phase 2.10 CSVs for hashes, structure, and assignments;
+validate A--S with tiny synthetic arrays. Do not read real rendered components,
+summarize stem-angle/pair-angle effects, or generate RQ6 results or figures.
 """
 
 from __future__ import annotations
@@ -167,14 +167,14 @@ EXPECTED_FIGURES = (
 
 
 def require(condition: bool, message: str) -> None:
-    """不满足冻结条件时立即中止。"""
+    """Stop when a frozen condition is not met."""
 
     if not condition:
         raise RuntimeError(message)
 
 
 def sha256_file(path: Path) -> str:
-    """返回文件字节的 lowercase SHA-256。"""
+    """Return the lowercase SHA-256 of the file bytes."""
 
     digest = hashlib.sha256()
     try:
@@ -182,35 +182,35 @@ def sha256_file(path: Path) -> str:
             for block in iter(lambda: handle.read(1024 * 1024), b""):
                 digest.update(block)
     except OSError as error:
-        raise RuntimeError(f"无法读取文件：{path}") from error
+        raise RuntimeError(f"Cannot read file: {path}") from error
     return digest.hexdigest()
 
 
 def read_json(path: Path) -> dict[str, Any]:
-    """读取 UTF-8 JSON object。"""
+    """Read a UTF-8 JSON object."""
 
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as error:
-        raise RuntimeError(f"无法读取合法 JSON：{path}") from error
-    require(isinstance(value, dict), f"JSON 顶层必须是 object：{path}")
+        raise RuntimeError(f"Cannot read valid JSON: {path}") from error
+    require(isinstance(value, dict), f"JSON root must be an object: {path}")
     return value
 
 
 def nested(value: dict[str, Any], *keys: str) -> Any:
-    """读取 required nested field。"""
+    """Read a required nested field."""
 
     current: Any = value
     traversed: list[str] = []
     for key in keys:
         traversed.append(key)
-        require(isinstance(current, dict) and key in current, f"缺少字段：{'.'.join(traversed)}")
+        require(isinstance(current, dict) and key in current, f"Missing field: {'.'.join(traversed)}")
         current = current[key]
     return current
 
 
 def csv_rows(path: Path) -> tuple[list[str], list[dict[str, str]]]:
-    """读取 CSV 结构；调用方只能使用 frozen identifiers，不汇总 scientific values。"""
+    """Read CSV structure; use only frozen identifiers, not scientific summaries."""
 
     try:
         with path.open("r", encoding="utf-8-sig", newline="") as handle:
@@ -218,33 +218,33 @@ def csv_rows(path: Path) -> tuple[list[str], list[dict[str, str]]]:
             fieldnames = list(reader.fieldnames or [])
             rows = list(reader)
     except (OSError, UnicodeError, csv.Error) as error:
-        raise RuntimeError(f"无法读取 CSV：{path}") from error
-    require(bool(fieldnames), f"CSV 缺少 header：{path}")
+        raise RuntimeError(f"Cannot read CSV: {path}") from error
+    require(bool(fieldnames), f"CSV header is missing: {path}")
     return fieldnames, rows
 
 
 def exact_assignments(angles: Iterable[int]) -> tuple[tuple[int, ...], ...]:
-    """返回四个 distinct angles 的 lexicographic 24 个 bijections。"""
+    """Return all 24 bijections for four distinct angles in lexicographic order."""
 
     angle_tuple = tuple(angles)
-    require(len(angle_tuple) == 4 and len(set(angle_tuple)) == 4, "angle set 必须有四个 distinct angles")
+    require(len(angle_tuple) == 4 and len(set(angle_tuple)) == 4, "The angle set must contain four distinct angles")
     result = tuple(permutations(angle_tuple))
-    require(len(result) == len(set(result)) == 24, "permutation count 必须为 24")
+    require(len(result) == len(set(result)) == 24, "The permutation count must be 24")
     return result
 
 
 def validate_parent_inputs(protocol: dict[str, Any]) -> None:
-    """验证 parent versions、哈希与 protocol 中的 provenance。"""
+    """Validate parent versions, hashes, and protocol provenance."""
 
     mechanism = read_json(MECHANISM_PROTOCOL_PATH)
     static = read_json(STATIC_PROTOCOL_PATH)
     manifest = read_json(MANIFEST_PATH)
-    require(sha256_file(MECHANISM_PROTOCOL_PATH) == MECHANISM_PROTOCOL_SHA256, "mechanism protocol SHA-256 不匹配")
-    require(sha256_file(STATIC_PROTOCOL_PATH) == STATIC_PROTOCOL_SHA256, "static protocol SHA-256 不匹配")
-    require(sha256_file(MANIFEST_PATH) == MANIFEST_SHA256, "manifest SHA-256 不匹配")
-    require(mechanism.get("protocol_version") == MECHANISM_PROTOCOL_VERSION, "mechanism protocol version 不是 1.0")
-    require(static.get("protocol_version") == STATIC_PROTOCOL_VERSION, "static protocol version 不是 1.1")
-    require(manifest.get("manifest_version") == MANIFEST_VERSION, "manifest version 不是 1.0")
+    require(sha256_file(MECHANISM_PROTOCOL_PATH) == MECHANISM_PROTOCOL_SHA256, "Mechanism protocol SHA-256 mismatch")
+    require(sha256_file(STATIC_PROTOCOL_PATH) == STATIC_PROTOCOL_SHA256, "Static protocol SHA-256 mismatch")
+    require(sha256_file(MANIFEST_PATH) == MANIFEST_SHA256, "Manifest SHA-256 mismatch")
+    require(mechanism.get("protocol_version") == MECHANISM_PROTOCOL_VERSION, "Mechanism protocol version must be 1.0")
+    require(static.get("protocol_version") == STATIC_PROTOCOL_VERSION, "Static protocol version must be 1.1")
+    require(manifest.get("manifest_version") == MANIFEST_VERSION, "Manifest version must be 1.0")
 
     expected = {
         "mechanism_protocol": (MECHANISM_PROTOCOL_VERSION, MECHANISM_PROTOCOL_SHA256),
@@ -253,30 +253,30 @@ def validate_parent_inputs(protocol: dict[str, Any]) -> None:
     }
     parents = nested(protocol, "parent_inputs")
     for key, (version, digest) in expected.items():
-        require(nested(parents, key, "version") == version, f"{key} version provenance 不匹配")
-        require(nested(parents, key, "sha256") == digest, f"{key} SHA provenance 不匹配")
-        require(nested(parents, key, "unchanged_required") is True, f"{key} 必须保持不变")
+        require(nested(parents, key, "version") == version, f"{key} version provenance mismatch")
+        require(nested(parents, key, "sha256") == digest, f"{key} SHA provenance mismatch")
+        require(nested(parents, key, "unchanged_required") is True, f"{key} must remain unchanged")
 
 
 def validate_phase2_10_inputs(protocol: dict[str, Any]) -> dict[str, Any]:
-    """验证五个 frozen CSV 的字节哈希、行数和允许读取的排列结构。"""
+    """Validate the five frozen CSV hashes, row counts, and permitted assignment structure."""
 
     protocol_files = nested(protocol, "phase2_10_frozen_inputs", "files")
-    require(isinstance(protocol_files, list) and len(protocol_files) == 5, "必须冻结五个 Phase 2.10 CSV")
+    require(isinstance(protocol_files, list) and len(protocol_files) == 5, "Exactly five Phase 2.10 CSVs must be frozen")
     protocol_map = {row.get("path"): row for row in protocol_files if isinstance(row, dict)}
-    require(set(protocol_map) == set(PHASE2_10_INPUTS), "Phase 2.10 frozen input paths 不匹配")
+    require(set(protocol_map) == set(PHASE2_10_INPUTS), "Phase 2.10 frozen input paths mismatch")
 
     row_counts: dict[str, int] = {}
     for relative, expected in PHASE2_10_INPUTS.items():
         path = REPO_ROOT / relative
-        require(sha256_file(path) == expected["sha256"], f"Phase 2.10 input SHA-256 不匹配：{relative}")
+        require(sha256_file(path) == expected["sha256"], f"Phase 2.10 input SHA-256 mismatch: {relative}")
         fields, rows = csv_rows(path)
-        require(len(rows) == expected["rows"], f"Phase 2.10 input row count 不匹配：{relative}")
-        require(protocol_map[relative].get("sha256") == expected["sha256"], f"protocol input SHA 不匹配：{relative}")
-        require(protocol_map[relative].get("rows") == expected["rows"], f"protocol input rows 不匹配：{relative}")
+        require(len(rows) == expected["rows"], f"Phase 2.10 input row count mismatch: {relative}")
+        require(protocol_map[relative].get("sha256") == expected["sha256"], f"Protocol input SHA mismatch: {relative}")
+        require(protocol_map[relative].get("rows") == expected["rows"], f"Protocol input rows mismatch: {relative}")
         row_counts[relative] = len(rows)
         if relative.endswith("position_assignment_permutations.csv"):
-            require(POSITION_REQUIRED_COLUMNS.issubset(fields), "position assignment CSV schema 缺少 required fields")
+            require(POSITION_REQUIRED_COLUMNS.issubset(fields), "Position-assignment CSV schema is missing required fields")
 
     position_path = REPO_ROOT / next(
         relative for relative in PHASE2_10_INPUTS if relative.endswith("position_assignment_permutations.csv")
@@ -292,33 +292,33 @@ def validate_phase2_10_inputs(protocol: dict[str, Any]) -> dict[str, Any]:
         rank = int(row["rank"])
         track = row["track"]
         condition = row["condition"]
-        require((rank, track) in expected_tracks, f"position CSV track/rank 不在 manifest：{rank}, {track}")
-        require(condition in ANGLE_SETS, f"未知 condition：{condition}")
+        require((rank, track) in expected_tracks, f"Position CSV track/rank is not in the manifest: {rank}, {track}")
+        require(condition in ANGLE_SETS, f"Unknown condition: {condition}")
         groups.setdefault((rank, track, condition), []).append(row)
-    require(len(groups) == 20, "必须有 10 songs x 2 conditions = 20 groups")
+    require(len(groups) == 20, "Exactly 10 songs x 2 conditions = 20 groups are required")
 
     maximum_stem_angle_count_error = 0
     maximum_pair_angle_count_error = 0
     for (_, _, condition), rows in groups.items():
         ordered = sorted(rows, key=lambda row: int(row["permutation_id"]))
-        require(len(ordered) == 24, f"{condition} 每组必须有 24 assignments")
-        require([int(row["permutation_id"]) for row in ordered] == list(range(1, 25)), "permutation_id 必须精确为 1--24")
+        require(len(ordered) == 24, f"Each {condition} group must contain 24 assignments")
+        require([int(row["permutation_id"]) for row in ordered] == list(range(1, 25)), "permutation_id must be exactly 1--24")
         assignments = tuple(
             tuple(int(row[f"{stem}_angle_deg"]) for stem in SOURCE_ORDER)
             for row in ordered
         )
         expected_assignments = exact_assignments(ANGLE_SETS[condition])
-        require(assignments == expected_assignments, f"{condition} permutation enumeration 不匹配")
+        require(assignments == expected_assignments, f"{condition} permutation enumeration mismatch")
         canonical_rows = [row for row in ordered if row["is_canonical"] == "1"]
-        require(len(canonical_rows) == 1, f"{condition} canonical assignment 必须恰好一个")
+        require(len(canonical_rows) == 1, f"Exactly one {condition} canonical assignment is required")
         canonical = tuple(int(canonical_rows[0][f"{stem}_angle_deg"]) for stem in SOURCE_ORDER)
-        require(canonical == ANGLE_SETS[condition], f"{condition} canonical assignment 不匹配")
+        require(canonical == ANGLE_SETS[condition], f"{condition} canonical assignment mismatch")
 
         for stem_index, _stem in enumerate(SOURCE_ORDER):
             for angle in ANGLE_SETS[condition]:
                 count = sum(assignment[stem_index] == angle for assignment in assignments)
                 maximum_stem_angle_count_error = max(maximum_stem_angle_count_error, abs(count - 6))
-                require(count == 6, "真实 permutation 中每个 stem-angle 必须出现 6 次")
+                require(count == 6, "Each stem-angle must occur six times in the recorded permutations")
         for first, second in combinations(range(4), 2):
             for angle_i in ANGLE_SETS[condition]:
                 for angle_j in ANGLE_SETS[condition]:
@@ -329,7 +329,7 @@ def validate_phase2_10_inputs(protocol: dict[str, Any]) -> dict[str, Any]:
                         for assignment in assignments
                     )
                     maximum_pair_angle_count_error = max(maximum_pair_angle_count_error, abs(count - 2))
-                    require(count == 2, "真实 permutation 中每个 ordered stem-pair angle-pair 必须出现 2 次")
+                    require(count == 2, "Each ordered stem-pair angle-pair must occur twice in the recorded permutations")
 
     return {
         "input_row_counts": row_counts,
@@ -343,81 +343,81 @@ def validate_phase2_10_inputs(protocol: dict[str, Any]) -> dict[str, Any]:
 
 
 def validate_component_source_provenance(protocol: dict[str, Any]) -> dict[str, Any]:
-    """验证无持久化 component cache 的事实与唯一允许的未来重建链。"""
+    """Verify that no component cache exists and validate the sole future reconstruction path."""
 
     provenance = nested(protocol, "component_source_provenance")
     persisted = nested(provenance, "phase2_10_persisted_component_cache")
     phase2_10_root = REPO_ROOT / "outputs" / "phase2" / "phase2_10_robustness"
     mat_files = tuple(phase2_10_root.rglob("*.mat"))
-    require(persisted.get("exists") is False, "不得声称 Phase 2.10 有持久化 component cache")
-    require(persisted.get("mat_file_count") == 0 and not mat_files, "Phase 2.10 MAT cache audit 必须为 0")
-    require(persisted.get("component_cache_files") == [], "不存在 component cache files")
-    require(persisted.get("component_cache_hashes") == [], "不存在 component cache hashes")
-    require(persisted.get("expected_song_count") == 10, "component provenance song count 必须为 10")
-    require(persisted.get("phase2_11b_reuse_claim_allowed") is False, "不得声称复用不存在的 component cache")
+    require(persisted.get("exists") is False, "Phase 2.10 must not be described as having a persisted component cache")
+    require(persisted.get("mat_file_count") == 0 and not mat_files, "The Phase 2.10 MAT cache count must be zero")
+    require(persisted.get("component_cache_files") == [], "No component cache files should exist")
+    require(persisted.get("component_cache_hashes") == [], "No component cache hashes should exist")
+    require(persisted.get("expected_song_count") == 10, "The component provenance song count must be 10")
+    require(persisted.get("phase2_11b_reuse_claim_allowed") is False, "Reuse of a nonexistent component cache must not be claimed")
 
     schema = nested(provenance, "phase2_10_in_memory_component_schema")
-    require(schema.get("variables") == ["gtComponents", "errorComponents"], "in-memory component variables 不匹配")
-    require(schema.get("cell_dimensions") == [4, 7], "in-memory component cell schema 必须为 4 x 7")
-    require(tuple(schema.get("stem_axis", ())) == SOURCE_ORDER, "in-memory stem axis 不匹配")
-    require(tuple(schema.get("angle_axis_deg", ())) == (-80, -30, -10, 0, 10, 30, 80), "in-memory angle axis 不匹配")
-    require(schema.get("gt_components_per_song") == 28, "每 song GT components 必须为 28")
-    require(schema.get("error_components_per_song") == 28, "每 song error components 必须为 28")
-    require(schema.get("expected_song_count") == 10, "in-memory component expected songs 必须为 10")
+    require(schema.get("variables") == ["gtComponents", "errorComponents"], "In-memory component variables mismatch")
+    require(schema.get("cell_dimensions") == [4, 7], "The in-memory component cell schema must be 4 x 7")
+    require(tuple(schema.get("stem_axis", ())) == SOURCE_ORDER, "In-memory stem axis mismatch")
+    require(tuple(schema.get("angle_axis_deg", ())) == (-80, -30, -10, 0, 10, 30, 80), "In-memory angle axis mismatch")
+    require(schema.get("gt_components_per_song") == 28, "Each song must have 28 GT components")
+    require(schema.get("error_components_per_song") == 28, "Each song must have 28 error components")
+    require(schema.get("expected_song_count") == 10, "The in-memory component song count must be 10")
 
     reconstruction = nested(provenance, "only_allowed_phase2_11b_reconstruction_path")
-    require(reconstruction.get("reconstruction_required") is True, "无 component cache 时 2.11b 必须明确需要 reconstruction")
-    require(reconstruction.get("reconstruction_executed_in_phase2_11a") is False, "2.11a 不得执行 component reconstruction")
-    require(reconstruction.get("renderer_source_git_head") == nested(protocol, "freeze_git", "head"), "renderer source Git HEAD 必须等于 protocol freeze HEAD")
+    require(reconstruction.get("reconstruction_required") is True, "Phase 2.11b must require reconstruction when no component cache exists")
+    require(reconstruction.get("reconstruction_executed_in_phase2_11a") is False, "Phase 2.11a must not reconstruct components")
+    require(reconstruction.get("renderer_source_git_head") == nested(protocol, "freeze_git", "head"), "Renderer source Git HEAD must match the protocol freeze HEAD")
 
     hrtf = nested(reconstruction, "hrtf")
-    require(hrtf.get("path") == HRTF_PATH, "HRTF path 不匹配")
-    require(hrtf.get("sha256") == HRTF_SHA256, "HRTF protocol SHA provenance 不匹配")
-    require(sha256_file(REPO_ROOT / HRTF_PATH) == HRTF_SHA256, "subject_003 SOFA SHA-256 不匹配")
-    require(hrtf.get("subject") == "subject_003" and hrtf.get("elevation_deg") == 0, "HRTF subject/elevation 不匹配")
-    require(tuple(hrtf.get("angles_deg", ())) == (-80, -30, -10, 0, 10, 30, 80), "reconstruction exact angles 不匹配")
+    require(hrtf.get("path") == HRTF_PATH, "HRTF path mismatch")
+    require(hrtf.get("sha256") == HRTF_SHA256, "HRTF protocol SHA provenance mismatch")
+    require(sha256_file(REPO_ROOT / HRTF_PATH) == HRTF_SHA256, "subject_003 SOFA SHA-256 mismatch")
+    require(hrtf.get("subject") == "subject_003" and hrtf.get("elevation_deg") == 0, "HRTF subject/elevation mismatch")
+    require(tuple(hrtf.get("angles_deg", ())) == (-80, -30, -10, 0, 10, 30, 80), "Exact reconstruction angles mismatch")
 
     excerpt = nested(reconstruction, "excerpt")
-    require((excerpt.get("start_seconds"), excerpt.get("end_seconds_exclusive")) == (30, 60), "excerpt 必须为 [30,60) s")
-    require(excerpt.get("sample_rate_hz") == 44_100 and excerpt.get("input_frames") == 1_323_000, "excerpt sample rate/frame count 不匹配")
-    require(excerpt.get("stereo_to_mono") == "x_mono = 0.5 * (x_L + x_R)", "mono conversion 不匹配")
-    require(excerpt.get("error_source") == "estimated_mono - ground_truth_mono", "error source definition 不匹配")
+    require((excerpt.get("start_seconds"), excerpt.get("end_seconds_exclusive")) == (30, 60), "The excerpt must be [30,60) s")
+    require(excerpt.get("sample_rate_hz") == 44_100 and excerpt.get("input_frames") == 1_323_000, "Excerpt sample rate/frame count mismatch")
+    require(excerpt.get("stereo_to_mono") == "x_mono = 0.5 * (x_L + x_R)", "Mono conversion mismatch")
+    require(excerpt.get("error_source") == "estimated_mono - ground_truth_mono", "Error source definition mismatch")
 
     rendering = nested(reconstruction, "rendering")
-    require(rendering.get("convolution") == "full linear convolution", "必须使用 full linear convolution")
-    require(rendering.get("output_length") == "N + L - 1", "renderer output length 不匹配")
-    require(rendering.get("second_renderer_allowed") is False, "不得建立第二套 renderer")
+    require(rendering.get("convolution") == "full linear convolution", "Full linear convolution is required")
+    require(rendering.get("output_length") == "N + L - 1", "Renderer output length mismatch")
+    require(rendering.get("second_renderer_allowed") is False, "A second renderer is not allowed")
 
     source_rows = reconstruction.get("source_files")
-    require(isinstance(source_rows, list), "component source_files 必须为 list")
+    require(isinstance(source_rows, list), "Component source_files must be a list")
     source_map = {row.get("path"): row.get("sha256") for row in source_rows if isinstance(row, dict)}
-    require(source_map == COMPONENT_SOURCE_FILES, "component source-file provenance 不匹配")
+    require(source_map == COMPONENT_SOURCE_FILES, "Component source-file provenance mismatch")
     for relative, digest in COMPONENT_SOURCE_FILES.items():
-        require(sha256_file(REPO_ROOT / relative) == digest, f"component source-file SHA-256 不匹配：{relative}")
+        require(sha256_file(REPO_ROOT / relative) == digest, f"Component source-file SHA-256 mismatch: {relative}")
 
     estimated = nested(reconstruction, "estimated_source")
-    require(estimated.get("completion_schema") == "phase2_5b_track_completion_v1", "estimated cache completion schema 不匹配")
-    require(estimated.get("loader_must_validate_stem_sha256") is True, "estimated loader 必须验证 stem hashes")
-    require(estimated.get("expected_song_count") == 10, "estimated cache song count 必须为 10")
+    require(estimated.get("completion_schema") == "phase2_5b_track_completion_v1", "Estimated-cache completion schema mismatch")
+    require(estimated.get("loader_must_validate_stem_sha256") is True, "The estimated loader must validate stem hashes")
+    require(estimated.get("expected_song_count") == 10, "The estimated-cache song count must be 10")
     protocol_completions = estimated.get("completion_files")
-    require(isinstance(protocol_completions, list) and len(protocol_completions) == 10, "必须冻结 10 个 cache completion files")
+    require(isinstance(protocol_completions, list) and len(protocol_completions) == 10, "Exactly 10 cache completion files must be frozen")
     protocol_completion_tuples = tuple(
         (row.get("rank"), row.get("track"), row.get("path"), row.get("sha256"))
         for row in protocol_completions
         if isinstance(row, dict)
     )
-    require(protocol_completion_tuples == PHASE2_5_CACHE_COMPLETIONS, "cache completion provenance/order 不匹配")
+    require(protocol_completion_tuples == PHASE2_5_CACHE_COMPLETIONS, "Cache completion provenance/order mismatch")
     for rank, track, relative, digest in PHASE2_5_CACHE_COMPLETIONS:
         path = REPO_ROOT / relative
-        require(sha256_file(path) == digest, f"cache completion SHA-256 不匹配：{track}")
+        require(sha256_file(path) == digest, f"Cache completion SHA-256 mismatch: {track}")
         completion = read_json(path)
-        require(completion.get("schema") == "phase2_5b_track_completion_v1", f"cache schema 不匹配：{track}")
-        require((completion.get("manifest_rank"), completion.get("track")) == (rank, track), f"cache rank/track 不匹配：{track}")
-        require(set(completion.get("stems", {})) == {"vocals", "drums", "bass", "other"}, f"cache stem set 不匹配：{track}")
+        require(completion.get("schema") == "phase2_5b_track_completion_v1", f"Cache schema mismatch: {track}")
+        require((completion.get("manifest_rank"), completion.get("track")) == (rank, track), f"Cache rank/track mismatch: {track}")
+        require(set(completion.get("stems", {})) == {"vocals", "drums", "bass", "other"}, f"Cache stem set mismatch: {track}")
         require(all(
             isinstance(marker.get("sha256"), str) and len(marker["sha256"]) == 64
             for marker in completion["stems"].values()
-        ), f"cache stem SHA markers 不完整：{track}")
+        ), f"Cache stem SHA markers are incomplete: {track}")
 
     return {
         "persisted_component_cache_exists": False,
@@ -433,81 +433,81 @@ def validate_component_source_provenance(protocol: dict[str, Any]) -> dict[str, 
 
 
 def validate_protocol_design(protocol: dict[str, Any]) -> None:
-    """验证 RQ6、数学定义、outputs、figures 和 exploratory 边界。"""
+    """Validate RQ6, definitions, outputs, figures, and exploratory boundaries."""
 
-    require(protocol.get("protocol_version") == "1.0", "protocol version 必须为 1.0")
-    require(protocol.get("phase") == "2.11a", "phase 必须为 2.11a")
-    require(protocol.get("status") == EXPECTED_STATUS, "protocol status 不匹配")
-    require(nested(protocol, "protocol_history", "pre_correction_draft_sha256") == "3036d82c893aa93cfb78d692cb5e89ada5f4b9ac869bc60c99eff3b41c852a29", "pre-correction draft SHA 未保留")
-    require(nested(protocol, "protocol_history", "correction_triggered_by_new_rq6_results") is False, "clarification 不得声称由新 RQ6 结果触发")
-    require(nested(protocol, "freeze_git", "start_state_clean") is True, "freeze 起始树必须 clean")
+    require(protocol.get("protocol_version") == "1.0", "Protocol version must be 1.0")
+    require(protocol.get("phase") == "2.11a", "Phase must be 2.11a")
+    require(protocol.get("status") == EXPECTED_STATUS, "Protocol status mismatch")
+    require(nested(protocol, "protocol_history", "pre_correction_draft_sha256") == "3036d82c893aa93cfb78d692cb5e89ada5f4b9ac869bc60c99eff3b41c852a29", "The pre-correction draft SHA must be retained")
+    require(nested(protocol, "protocol_history", "correction_triggered_by_new_rq6_results") is False, "The clarification must not be attributed to new RQ6 results")
+    require(nested(protocol, "freeze_git", "start_state_clean") is True, "The freeze must start from a clean working tree")
     freeze_head = nested(protocol, "freeze_git", "head")
-    require(isinstance(freeze_head, str) and len(freeze_head) == 40, "freeze Git HEAD 必须为 40 位 SHA")
-    require(nested(protocol, "protocol_timing", "exact_statement") == TIMING_STATEMENT, "exploratory timing statement 不匹配")
-    require(nested(protocol, "protocol_timing", "original_confirmatory_research_question") is False, "RQ6 不得标为原始 confirmatory RQ")
-    require(nested(protocol, "research_questions", "RQ6") == RQ6, "RQ6 wording 不匹配")
+    require(isinstance(freeze_head, str) and len(freeze_head) == 40, "Freeze Git HEAD must be a 40-character SHA")
+    require(nested(protocol, "protocol_timing", "exact_statement") == TIMING_STATEMENT, "Exploratory timing statement mismatch")
+    require(nested(protocol, "protocol_timing", "original_confirmatory_research_question") is False, "RQ6 must not be labelled an original confirmatory research question")
+    require(nested(protocol, "research_questions", "RQ6") == RQ6, "RQ6 wording mismatch")
     for suffix in "abcd":
-        require(isinstance(nested(protocol, "research_questions", f"RQ6{suffix}"), str), f"RQ6{suffix} 缺失")
-    require(nested(protocol, "research_questions", "RQ6a_1") == "How does assignment change K = I/A and therefore R?", "RQ6a-1 wording 不匹配")
-    require(nested(protocol, "research_questions", "RQ6a_2") == "How do U and W contribute to assignment-dependent V?", "RQ6a-2 wording 不匹配")
+        require(isinstance(nested(protocol, "research_questions", f"RQ6{suffix}"), str), f"RQ6{suffix} is missing")
+    require(nested(protocol, "research_questions", "RQ6a_1") == "How does assignment change K = I/A and therefore R?", "RQ6a-1 wording mismatch")
+    require(nested(protocol, "research_questions", "RQ6a_2") == "How do U and W contribute to assignment-dependent V?", "RQ6a-2 wording mismatch")
 
     design = nested(protocol, "frozen_design")
-    require(tuple(design.get("source_order", ())) == SOURCE_ORDER, "source order 不匹配")
-    require(tuple(design.get("conditions", ())) == tuple(ANGLE_SETS), "conditions 不匹配")
+    require(tuple(design.get("source_order", ())) == SOURCE_ORDER, "Source order mismatch")
+    require(tuple(design.get("conditions", ())) == tuple(ANGLE_SETS), "Conditions mismatch")
     for condition, angles in ANGLE_SETS.items():
-        require(tuple(nested(design, "angle_sets_deg", condition)) == angles, f"{condition} angle set 不匹配")
-        require(tuple(nested(design, "canonical_assignments_deg_in_source_order", condition)) == angles, f"{condition} canonical 不匹配")
+        require(tuple(nested(design, "angle_sets_deg", condition)) == angles, f"{condition} angle set mismatch")
+        require(tuple(nested(design, "canonical_assignments_deg_in_source_order", condition)) == angles, f"{condition} canonical assignment mismatch")
         separations = tuple(sorted({abs(a - b) for a in angles for b in angles if a != b}))
-        require(separations == EXPECTED_SEPARATIONS[condition], f"{condition} separations 不匹配")
-    require(tuple(tuple(pair) for pair in design.get("unordered_stem_pairs_with_fixed_identity_direction", ())) == STEM_PAIRS, "六个 stem pairs 不匹配")
-    require(design.get("permutations_per_song_condition") == 24, "每 song-condition 必须 24 permutations")
-    require(design.get("stem_angle_assignment_count") == 6, "stem-angle count 必须为 6")
-    require(design.get("ordered_pair_angle_assignment_count") == 2, "ordered pair-angle count 必须为 2")
+        require(separations == EXPECTED_SEPARATIONS[condition], f"{condition} separations mismatch")
+    require(tuple(tuple(pair) for pair in design.get("unordered_stem_pairs_with_fixed_identity_direction", ())) == STEM_PAIRS, "The six stem pairs do not match")
+    require(design.get("permutations_per_song_condition") == 24, "Each song-condition must have 24 permutations")
+    require(design.get("stem_angle_assignment_count") == 6, "The stem-angle count must be six")
+    require(design.get("ordered_pair_angle_assignment_count") == 2, "The ordered pair-angle count must be two")
 
-    require(nested(protocol, "rq6a_assignment_level_decomposition", "definitions", "exact_identity") == "R_p = 1 + K_p", "R = 1 + K 未冻结")
-    require(nested(protocol, "rq6a_assignment_level_decomposition", "oracle_normalized", "exact_identity") == "V_p = U_p + W_p", "V = U + W 未冻结")
-    require(nested(protocol, "rq6a_assignment_level_decomposition", "analysis_roles", "cancellation_state", "exact_relation") == "R = 1 + K", "R/K cancellation-state role 未冻结")
-    require(nested(protocol, "rq6a_assignment_level_decomposition", "analysis_roles", "cancellation_state", "A_and_I_as_competing_explanations_of_R") is False, "不得将 A/I 作为 R 的 competing explanations")
-    require(nested(protocol, "rq6a_assignment_level_decomposition", "analysis_roles", "normalized_downstream_error_magnitude", "exact_relation") == "V = U + W", "V/U/W downstream-error role 未冻结")
-    require(nested(protocol, "rq6b_stem_angle_marginals", "assignment_count_required") == 6, "marginal assignment count 必须为 6")
-    require(nested(protocol, "rq6b_stem_angle_marginals", "causal_main_effect") is False, "stem-angle marginal 不得称为 causal main effect")
-    require(nested(protocol, "rq6c_pairwise_angle_mechanism", "pair_retention", "clamp_scientific_values") is False, "P 不得 clamp")
-    require(nested(protocol, "rq6c_pairwise_angle_mechanism", "pair_retention", "zero_energy_edge_case", "pair_retention_ratio_status") == "undefined", "zero pair denominator 必须返回 undefined")
-    require(nested(protocol, "rq6c_pairwise_angle_mechanism", "pair_retention", "zero_energy_edge_case", "epsilon_allowed") is False, "zero pair denominator 不得加 epsilon")
-    require(nested(protocol, "rq6c_pairwise_angle_mechanism", "pair_retention", "zero_energy_edge_case", "official_test_action") == "STOP and review protocol edge case", "official-test zero pair action 不匹配")
-    require(nested(protocol, "rq6c_pairwise_angle_mechanism", "cosine_alignment", "epsilon_allowed") is False, "cosine zero norm 不得加 epsilon")
-    require("P_common_matched and L are undefined" in nested(protocol, "rq6c_pairwise_angle_mechanism", "matched_common_pair_baseline", "undefined_input_policy"), "matched common undefined propagation 未冻结")
-    require(nested(protocol, "rq6c_pairwise_angle_mechanism", "differential_pair_retention_change", "primary_pair_placement_metric") is True, "L 必须为 primary pair-placement metric")
-    require(nested(protocol, "rq6d_canonical_assignment_explanation", "pair_interaction", "summary_center_required") == "mean", "canonical exact decomposition 必须使用 mean")
-    require(nested(protocol, "rq6d_canonical_assignment_explanation", "pair_interaction", "median_allowed_for_exact_decomposition") is False, "canonical exact decomposition 不得换 median")
+    require(nested(protocol, "rq6a_assignment_level_decomposition", "definitions", "exact_identity") == "R_p = 1 + K_p", "R = 1 + K must be frozen")
+    require(nested(protocol, "rq6a_assignment_level_decomposition", "oracle_normalized", "exact_identity") == "V_p = U_p + W_p", "V = U + W must be frozen")
+    require(nested(protocol, "rq6a_assignment_level_decomposition", "analysis_roles", "cancellation_state", "exact_relation") == "R = 1 + K", "The R/K cancellation-state role must be frozen")
+    require(nested(protocol, "rq6a_assignment_level_decomposition", "analysis_roles", "cancellation_state", "A_and_I_as_competing_explanations_of_R") is False, "A/I must not be treated as competing explanations of R")
+    require(nested(protocol, "rq6a_assignment_level_decomposition", "analysis_roles", "normalized_downstream_error_magnitude", "exact_relation") == "V = U + W", "The V/U/W downstream-error role must be frozen")
+    require(nested(protocol, "rq6b_stem_angle_marginals", "assignment_count_required") == 6, "The marginal assignment count must be six")
+    require(nested(protocol, "rq6b_stem_angle_marginals", "causal_main_effect") is False, "A stem-angle marginal must not be described as a causal main effect")
+    require(nested(protocol, "rq6c_pairwise_angle_mechanism", "pair_retention", "clamp_scientific_values") is False, "P must not be clamped")
+    require(nested(protocol, "rq6c_pairwise_angle_mechanism", "pair_retention", "zero_energy_edge_case", "pair_retention_ratio_status") == "undefined", "A zero pair denominator must return undefined")
+    require(nested(protocol, "rq6c_pairwise_angle_mechanism", "pair_retention", "zero_energy_edge_case", "epsilon_allowed") is False, "A zero pair denominator must not receive an epsilon")
+    require(nested(protocol, "rq6c_pairwise_angle_mechanism", "pair_retention", "zero_energy_edge_case", "official_test_action") == "STOP and review protocol edge case", "Official-test zero-pair action mismatch")
+    require(nested(protocol, "rq6c_pairwise_angle_mechanism", "cosine_alignment", "epsilon_allowed") is False, "A zero cosine norm must not receive an epsilon")
+    require("P_common_matched and L are undefined" in nested(protocol, "rq6c_pairwise_angle_mechanism", "matched_common_pair_baseline", "undefined_input_policy"), "Matched-common undefined propagation must be frozen")
+    require(nested(protocol, "rq6c_pairwise_angle_mechanism", "differential_pair_retention_change", "primary_pair_placement_metric") is True, "L must be the primary pair-placement metric")
+    require(nested(protocol, "rq6d_canonical_assignment_explanation", "pair_interaction", "summary_center_required") == "mean", "The exact canonical decomposition must use the mean")
+    require(nested(protocol, "rq6d_canonical_assignment_explanation", "pair_interaction", "median_allowed_for_exact_decomposition") is False, "The exact canonical decomposition must not substitute the median")
 
-    require(nested(protocol, "analysis_policy", "status") == "EXPLORATORY FOLLOW-UP", "RQ6 必须为 exploratory")
-    require(nested(protocol, "analysis_policy", "confirmatory_p_values") is False, "不得新增 confirmatory p-values")
-    require(nested(protocol, "analysis_policy", "significance_tests") is False, "不得 significance hunting")
-    require(nested(protocol, "scope", "real_rq6_results_computed") is False, "2.11a 不得计算真实 RQ6 结果")
-    require(nested(protocol, "implementation_boundary", "separator_rerun") is False, "不得重跑 separator")
-    require(nested(protocol, "implementation_boundary", "convolution_rerun_in_phase2_11a") is False, "2.11a 不得重跑 convolution")
-    require(nested(protocol, "implementation_boundary", "phase2_11b_component_reconstruction_allowed") is True, "2.11b 必须明确唯一 reconstruction path")
-    require(nested(protocol, "implementation_boundary", "full_shapley_over_480_permutations") is False, "不得做 480-permutation full Shapley")
-    require(nested(protocol, "implementation_boundary", "frequency_by_assignment_analysis") is False, "不得做 frequency x assignment analysis")
-    require(nested(protocol, "future_phase_2_11b", "authorized_by_this_protocol") is False, "本轮不得开始 2.11b")
+    require(nested(protocol, "analysis_policy", "status") == "EXPLORATORY FOLLOW-UP", "RQ6 must be exploratory")
+    require(nested(protocol, "analysis_policy", "confirmatory_p_values") is False, "Confirmatory p-values must not be added")
+    require(nested(protocol, "analysis_policy", "significance_tests") is False, "Significance hunting is not allowed")
+    require(nested(protocol, "scope", "real_rq6_results_computed") is False, "Phase 2.11a must not compute real RQ6 results")
+    require(nested(protocol, "implementation_boundary", "separator_rerun") is False, "The separator must not be rerun")
+    require(nested(protocol, "implementation_boundary", "convolution_rerun_in_phase2_11a") is False, "Phase 2.11a must not rerun convolution")
+    require(nested(protocol, "implementation_boundary", "phase2_11b_component_reconstruction_allowed") is True, "Phase 2.11b must specify a single reconstruction path")
+    require(nested(protocol, "implementation_boundary", "full_shapley_over_480_permutations") is False, "Full Shapley analysis over 480 permutations is not allowed")
+    require(nested(protocol, "implementation_boundary", "frequency_by_assignment_analysis") is False, "Frequency-by-assignment analysis is not allowed")
+    require(nested(protocol, "future_phase_2_11b", "authorized_by_this_protocol") is False, "This stage must not start Phase 2.11b")
 
-    require(nested(protocol, "planned_outputs", "expected_future_row_counts") == EXPECTED_FUTURE_ROW_COUNTS, "future row counts 不匹配")
+    require(nested(protocol, "planned_outputs", "expected_future_row_counts") == EXPECTED_FUTURE_ROW_COUNTS, "Future row counts mismatch")
     table_rows = nested(protocol, "planned_outputs", "tables")
     actual_tables = {row.get("path"): row for row in table_rows if isinstance(row, dict)}
-    require(set(actual_tables) == set(EXPECTED_TABLE_FIELDS), "planned table paths 不匹配")
+    require(set(actual_tables) == set(EXPECTED_TABLE_FIELDS), "Planned table paths mismatch")
     for path, fields in EXPECTED_TABLE_FIELDS.items():
-        require(actual_tables[path].get("fields") == fields, f"planned fields 不匹配：{path}")
-    require([row.get("rows") for row in table_rows] == list(EXPECTED_FUTURE_ROW_COUNTS.values()), "planned table row counts/order 不匹配")
+        require(actual_tables[path].get("fields") == fields, f"Planned fields mismatch: {path}")
+    require([row.get("rows") for row in table_rows] == list(EXPECTED_FUTURE_ROW_COUNTS.values()), "Planned table row counts/order mismatch")
     figures = tuple(row.get("path") for row in nested(protocol, "planned_outputs", "figures"))
-    require(figures == EXPECTED_FIGURES, "planned primary figures 不匹配")
-    require("symmetric zero-centered scale" in nested(protocol, "planned_outputs", "figure_scale_policy"), "L figure scale rule 未冻结")
+    require(figures == EXPECTED_FIGURES, "Planned primary figures mismatch")
+    require("symmetric zero-centered scale" in nested(protocol, "planned_outputs", "figure_scale_policy"), "The L figure scale rule must be frozen")
 
 
 def energy_terms(rendered_errors: np.ndarray) -> tuple[float, float, float]:
-    """按 combined-binaural convention 计算 A、I、T。"""
+    """Compute A, I, and T using the combined-binaural convention."""
 
-    require(rendered_errors.ndim == 3 and rendered_errors.shape[0] == 4, "synthetic rendered errors 必须为 [4, ears, samples]")
+    require(rendered_errors.ndim == 3 and rendered_errors.shape[0] == 4, "Synthetic rendered errors must have shape [4, ears, samples]")
     individual = float(np.sum(rendered_errors * rendered_errors, dtype=np.float64))
     total_vector = np.sum(rendered_errors, axis=0, dtype=np.float64)
     total = float(np.sum(total_vector * total_vector, dtype=np.float64))
@@ -519,11 +519,11 @@ def energy_terms(rendered_errors: np.ndarray) -> tuple[float, float, float]:
 
 
 def assignment_decomposition(rendered_errors: np.ndarray, oracle_energy: float) -> dict[str, float]:
-    """计算 synthetic assignment-level A/I/T/R/K/U/W/V。"""
+    """Compute synthetic assignment-level A/I/T/R/K/U/W/V."""
 
     individual, interaction, total = energy_terms(rendered_errors)
-    require(individual > 0.0, "synthetic A 必须 > 0")
-    require(oracle_energy > 0.0, "synthetic oracle energy 必须 > 0")
+    require(individual > 0.0, "Synthetic A must be positive")
+    require(oracle_energy > 0.0, "Synthetic oracle energy must be positive")
     return {
         "A": individual,
         "I": interaction,
@@ -537,7 +537,7 @@ def assignment_decomposition(rendered_errors: np.ndarray, oracle_energy: float) 
 
 
 def pair_retention(first: np.ndarray, second: np.ndarray) -> dict[str, float | None]:
-    """计算 P、expanded P 和 cosine；exact zero norm 时 cosine 为 None。"""
+    """Compute P, expanded P, and cosine; return None for cosine at exactly zero norm."""
 
     energy_first = float(np.sum(first * first, dtype=np.float64))
     energy_second = float(np.sum(second * second, dtype=np.float64))
@@ -580,7 +580,7 @@ def matched_common_and_change(
     common_aa_p: float | None,
     common_bb_p: float | None,
 ) -> dict[str, float | str | None]:
-    """计算 matched common baseline 与 L，并传播 undefined P。"""
+    """Compute the matched-common baseline and L, propagating undefined P."""
 
     if differential_p is None or common_aa_p is None or common_bb_p is None:
         return {
@@ -597,7 +597,7 @@ def matched_common_and_change(
 
 
 def synthetic_component_table(angles: tuple[int, ...]) -> dict[tuple[int, int], np.ndarray]:
-    """构造 deterministic、non-degenerate 的四 stem x 四 angle 双耳 components。"""
+    """Construct deterministic, nondegenerate binaural components for four stems and four angles."""
 
     table: dict[tuple[int, int], np.ndarray] = {}
     for stem_index in range(4):
@@ -611,7 +611,7 @@ def synthetic_component_table(angles: tuple[int, ...]) -> dict[tuple[int, int], 
 
 
 def synthetic_canonical_checks(angles: tuple[int, ...]) -> tuple[float, float, float, float]:
-    """返回 ΣJ、R-1、canonical DeltaJ error、canonical delta_E error。"""
+    """Return sum(J), R-1, canonical DeltaJ error, and canonical delta_E error."""
 
     table = synthetic_component_table(angles)
     assignments = exact_assignments(angles)
@@ -653,7 +653,7 @@ def synthetic_canonical_checks(angles: tuple[int, ...]) -> tuple[float, float, f
 
 
 def run_synthetic_validation() -> dict[str, dict[str, Any]]:
-    """执行冻结的 synthetic tests A--S。"""
+    """Run frozen synthetic cases A--S."""
 
     rendered = np.asarray([
         [[1.0, 0.0, 0.2], [0.0, 0.1, 0.0]],
@@ -671,22 +671,22 @@ def run_synthetic_validation() -> dict[str, dict[str, Any]]:
     second = np.asarray([[-0.4, 0.1], [0.2, -0.1]], dtype=np.float64)
     pair = pair_retention(first, second)
     pair_identity_error = abs(float(pair["P"]) - float(pair["P_expanded"]))
-    require(pair_identity_error <= TOLERANCE, "C: pair retention expansion 不匹配")
-    require(float(pair["P"]) >= -NONNEGATIVE_TOLERANCE, "D: P 小于 numerical tolerance")
+    require(pair_identity_error <= TOLERANCE, "C: pair-retention expansion mismatch")
+    require(float(pair["P"]) >= -NONNEGATIVE_TOLERANCE, "D: P is below the numerical tolerance")
 
     cancelling = pair_retention(first, -first)
-    require(abs(float(cancelling["P"])) <= TOLERANCE, "E: identical cancelling vectors 未产生 P≈0")
+    require(abs(float(cancelling["P"])) <= TOLERANCE, "E: identical cancelling vectors did not produce P approximately zero")
     aligned = pair_retention(first, first)
-    require(float(aligned["P"]) > 1.0, "F: aligned vectors 未产生 P>1")
+    require(float(aligned["P"]) > 1.0, "F: aligned vectors did not produce P>1")
 
     p_aa = float(pair_retention(first, 0.25 * first)["P"])
     p_bb = float(pair_retention(second, -0.5 * second)["P"])
     matched_result = matched_common_and_change(float(pair["P"]), p_aa, p_bb)
     matched = float(matched_result["P_common_matched"])
-    require(abs(matched - (p_aa + p_bb) / 2.0) <= TOLERANCE, "G: matched common baseline formula 不匹配")
+    require(abs(matched - (p_aa + p_bb) / 2.0) <= TOLERANCE, "G: matched-common baseline formula mismatch")
     positive_l = float(matched_common_and_change(matched + 0.4, p_aa, p_bb)["L"])
     negative_l = float(matched_common_and_change(matched - 0.3, p_aa, p_bb)["L"])
-    require(positive_l > 0.0 and negative_l < 0.0, "H: L signed direction 不正确")
+    require(positive_l > 0.0 and negative_l < 0.0, "H: incorrect signed direction for L")
 
     balance_details: dict[str, Any] = {}
     for condition, angles in ANGLE_SETS.items():
@@ -696,7 +696,7 @@ def run_synthetic_validation() -> dict[str, dict[str, Any]]:
             for stem_index, stem in enumerate(SOURCE_ORDER)
             for angle in angles
         }
-        require(set(stem_angle_counts.values()) == {6}, "I: stem-angle count 不是 6")
+        require(set(stem_angle_counts.values()) == {6}, "I: the stem-angle count is not six")
         ordered_pair_counts = [
             sum(assignment[first] == angle_i and assignment[second] == angle_j for assignment in assignments)
             for first, second in combinations(range(4), 2)
@@ -704,7 +704,7 @@ def run_synthetic_validation() -> dict[str, dict[str, Any]]:
             for angle_j in angles
             if angle_i != angle_j
         ]
-        require(set(ordered_pair_counts) == {2}, "J: ordered pair-angle count 不是 2")
+        require(set(ordered_pair_counts) == {2}, "J: the ordered pair-angle count is not two")
         balance_details[condition] = {
             "stem_angle_count": 6,
             "ordered_pair_angle_count": 2,
@@ -712,14 +712,14 @@ def run_synthetic_validation() -> dict[str, dict[str, Any]]:
 
     moderate_separations = tuple(sorted({abs(a - b) for a in ANGLE_SETS["moderate"] for b in ANGLE_SETS["moderate"] if a != b}))
     wide_separations = tuple(sorted({abs(a - b) for a in ANGLE_SETS["wide"] for b in ANGLE_SETS["wide"] if a != b}))
-    require(moderate_separations == EXPECTED_SEPARATIONS["moderate"], "K: Moderate separations 不匹配")
-    require(wide_separations == EXPECTED_SEPARATIONS["wide"], "L: Wide separations 不匹配")
+    require(moderate_separations == EXPECTED_SEPARATIONS["moderate"], "K: moderate separations mismatch")
+    require(wide_separations == EXPECTED_SEPARATIONS["wide"], "L: wide separations mismatch")
 
     sum_j, r_minus_one, delta_j_error, delta_energy_error = synthetic_canonical_checks(ANGLE_SETS["wide"])
     sum_j_error = abs(sum_j - r_minus_one)
     require(sum_j_error <= TOLERANCE, "M: sum J != R - 1")
-    require(delta_j_error <= TOLERANCE, "N: canonical DeltaJ decomposition 不精确")
-    require(delta_energy_error <= TOLERANCE, "O: canonical delta_E decomposition 不精确")
+    require(delta_j_error <= TOLERANCE, "N: canonical DeltaJ decomposition is not exact")
+    require(delta_energy_error <= TOLERANCE, "O: canonical delta_E decomposition is not exact")
 
     altered = rendered.copy()
     altered[1] *= -0.65
@@ -741,21 +741,21 @@ def run_synthetic_validation() -> dict[str, dict[str, Any]]:
         name: abs(scaled[name] - decomposition[name])
         for name in ("R", "K")
     }
-    require(max(energy_scaling_errors.values()) <= TOLERANCE, "Q: A/I/T common scaling 不一致")
-    require(max(invariant_scaling_errors.values()) <= TOLERANCE, "Q: R/K 应对 common scaling 保持不变")
+    require(max(energy_scaling_errors.values()) <= TOLERANCE, "Q: inconsistent common scaling of A/I/T")
+    require(max(invariant_scaling_errors.values()) <= TOLERANCE, "Q: R/K must be invariant to common scaling")
 
     normalized_scaling_errors = {
         name: abs(scaled[name] - scale_squared * decomposition[name])
         for name in ("U", "W", "V")
     }
-    require(max(normalized_scaling_errors.values()) <= TOLERANCE, "R: U/W/V common scaling 不一致")
+    require(max(normalized_scaling_errors.values()) <= TOLERANCE, "R: inconsistent common scaling of U/W/V")
 
     zero = np.zeros_like(first)
     undefined_pair = pair_retention(zero, zero)
     undefined_matched = matched_common_and_change(float(pair["P"]), None, p_bb)
-    require(undefined_pair["P"] is None, "S: zero pair denominator 不得返回 finite P")
-    require(undefined_pair["pair_retention_status"] == "UNDEFINED_ZERO_PAIR_ENERGY", "S: zero pair denominator status 不匹配")
-    require(undefined_matched["L"] is None and undefined_matched["status"] == "UNDEFINED_REQUIRED_PAIR_RETENTION", "S: undefined matched P 必须传播到 L")
+    require(undefined_pair["P"] is None, "S: a zero pair denominator must not return finite P")
+    require(undefined_pair["pair_retention_status"] == "UNDEFINED_ZERO_PAIR_ENERGY", "S: zero pair-denominator status mismatch")
+    require(undefined_matched["L"] is None and undefined_matched["status"] == "UNDEFINED_REQUIRED_PAIR_RETENTION", "S: undefined matched P must propagate to L")
 
     return {
         "A_R_equals_1_plus_K": {"status": "PASS", "absolute_error": r_identity_error},
@@ -795,7 +795,7 @@ def run_synthetic_validation() -> dict[str, dict[str, Any]]:
 
 
 def validate_all() -> dict[str, Any]:
-    """运行完整 Phase 2.11a protocol validation。"""
+    """Run the complete Phase 2.11a protocol validation."""
 
     protocol = read_json(PROTOCOL_PATH)
     validate_parent_inputs(protocol)
@@ -827,7 +827,7 @@ def validate_all() -> dict[str, Any]:
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--json", action="store_true", help="以 JSON 输出验证结果。")
+    parser.add_argument("--json", action="store_true", help="Print validation results as JSON.")
     return parser.parse_args(argv)
 
 
