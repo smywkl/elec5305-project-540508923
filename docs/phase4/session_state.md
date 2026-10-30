@@ -1,5 +1,21 @@
 # Phase 4 当前会话锚点
 
+## Latest handoff: Phase 4.1b, 2026-10-30 (Australia/Sydney)
+
+This section supersedes the historical single-stem handoff below. Starting state was clean `main` at `4e3413136c495287e4d6052bc88b2059f7fb7d97`; the earlier single-stem work was already tracked. No commit/push was made.
+
+Four-source rendering and UI are implemented. See `phase4_1b_four_stem.md` for the file list, exact commands, provenance and limitations. New production class: `src/matlab/phase4/Phase4Mixer.m`. New entries: `phase4_four_realtime` and `phase4_four_validate`. The launcher supports `four-play`, `four-test`, `four-ui-test` and `-ShowUI`. The original single-stem functions and `Phase4FIR` remain available and unchanged; `phase4_prepare()` defaults to the original behavior.
+
+The same HTDemucs-FT development cache supplies four aligned 529,200-sample mono sources at 44.1 kHz. Four independent FIR states share one cursor, CIPIC subject_003 bank, frame clock, fixed gain and writer. Each track has target/selected angle, Mute/Solo and 20 ms gates. The UI has four changing-event sliders and a shared top view. Default remains 1024/WASAPI. No Phase 1-3 code or prior scientific artifacts were modified.
+
+Accepted output directories under `outputs/phase4/`: `phase4_1b_probe_external_20261030`, `phase4_1b_offline_01`, `phase4_1b_visible1024_01`, `phase4_1b_single_regression_01`. All exited 0. Four-source static error 3.82e-17; Solo error 1.99e-17; independent-state error 0; all 256 Mute/Solo masks pass. Visible Realtek headphone playback rendered 34.55 seconds, three opens/releases, zero underruns including warmup/drain, peak 0.02301, mean/P99 DSP 0.800/2.110 ms. Pause cursor preservation and Stop reset were observed in lifecycle.csv. Previous single-stem and Phase 2.7 synthetic regressions pass.
+
+Development runs `_wasapi1024_01` and `_02` are retained and described in the report; do not use them as final cleanup/stability evidence. `_01` had an out-of-range automated angle; `_02` had a first-session UI/scheduling underrun and function-edit cleanup warnings. The accepted visible run used stable source throughout, completed without warnings, and followed small UI prelayout/update fixes.
+
+Remaining: author must listen to all four stems with physical slider dragging, including Solo/Mute and fast movement. Fixed conservative gain may sound quiet (-32.76 dBFS measured peak). No hardware latency measurement or long-duration stability claim. Stop at Phase 4.1b; do not add trajectories, WAV export, Python equivalents or scientific experiments. No automatic commit/push.
+
+## Historical Phase 4.0 + 4.1a handoff
+
 ## Session intent
 
 仅 Phase 4.0 + 4.1a，MATLAB、CIPIC subject_003、44.1 kHz、elevation 0°、±80°、一个 cached stem、真正音频设备/UI。保护 Phase 1–3 frozen science，不运行 Demucs、不 commit/push。完成本轮原型与报告后停止等审查。

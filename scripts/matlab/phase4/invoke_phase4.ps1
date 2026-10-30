@@ -1,9 +1,10 @@
 param(
-    [ValidateSet('probe','test','play','ui-test')][string]$Mode = 'probe',
+    [ValidateSet('probe','test','play','ui-test','four-test','four-play','four-ui-test')][string]$Mode = 'probe',
     [int]$FrameSize = 1024,
     [string]$Driver = 'WASAPI',
     [string]$Device = '',
-    [string]$RunName = ''
+    [string]$RunName = '',
+    [switch]$ShowUI
 )
 $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
@@ -13,8 +14,9 @@ $runPath = Join-Path $repoRoot "outputs/phase4/$RunName"
 if (Test-Path -LiteralPath $runPath) { throw "Refusing to overwrite $runPath" }
 $prefsPath = Join-Path $runPath 'runtime/prefs'
 New-Item -ItemType Directory -Path $prefsPath -Force | Out-Null
-$sourceHashes = Get-ChildItem -LiteralPath $PSScriptRoot -File | Sort-Object Name | ForEach-Object {
-    [pscustomobject]@{ file = $_.Name; sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash }
+$sourceDirectories = @($PSScriptRoot, (Join-Path $repoRoot 'src/matlab/phase4')) | Where-Object { Test-Path -LiteralPath $_ }
+$sourceHashes = Get-ChildItem -LiteralPath $sourceDirectories -File | Sort-Object FullName | ForEach-Object {
+    [pscustomobject]@{ file = $_.FullName.Substring($repoRoot.Length + 1); sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash }
 }
 $sourceHashes | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $runPath 'source_hashes.json') -Encoding utf8
 function Quote-Matlab([string]$Value) { return "'" + $Value.Replace("'", "''") + "'" }
@@ -23,6 +25,9 @@ $outArg = Quote-Matlab $runPath
 switch ($Mode) {
     'probe' { $expression = $setup + "phase4_probe($outArg)" }
     'test' { $expression = $setup + "phase4_validate($outArg)" }
+    'four-test' { $expression = $setup + "phase4_four_validate($outArg)" }
+    'four-ui-test' { $show = if ($ShowUI) { 'true' } else { 'false' }; $expression = $setup + "phase4_four_realtime('OutputDir',$outArg,'FrameSize',$FrameSize,'Driver'," + (Quote-Matlab $Driver) + ",'Device'," + (Quote-Matlab $Device) + ",'AutoTest',true,'ShowUI',$show)" }
+    'four-play' { $expression = $setup + "phase4_four_realtime('OutputDir',$outArg,'FrameSize',$FrameSize,'Driver'," + (Quote-Matlab $Driver) + ",'Device'," + (Quote-Matlab $Device) + ')' }
     'ui-test' { $expression = $setup + "phase4_realtime('OutputDir',$outArg,'FrameSize',$FrameSize,'Driver'," + (Quote-Matlab $Driver) + ",'Device'," + (Quote-Matlab $Device) + ",'AutoTest',true)" }
     'play' { $expression = $setup + "phase4_realtime('OutputDir',$outArg,'FrameSize',$FrameSize,'Driver'," + (Quote-Matlab $Driver) + ",'Device'," + (Quote-Matlab $Device) + ')'
     }

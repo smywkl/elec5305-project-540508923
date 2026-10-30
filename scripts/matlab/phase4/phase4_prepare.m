@@ -1,5 +1,8 @@
-function data = phase4_prepare()
+function data = phase4_prepare(mode)
 %PHASE4_PREPARE All disk access, provenance checks and HRIR selection precede playback.
+arguments
+    mode (1,:) char {mustBeMember(mode,{'single','four'})} = 'single'
+end
 root=fileparts(fileparts(fileparts(fileparts(mfilename('fullpath')))));
 old=path; cleanup=onCleanup(@() path(old)); %#ok<NASGU>
 for folder=["hrtf","oracle","comparison"]
@@ -40,4 +43,28 @@ data.mono(1:n)=data.mono(1:n).*envelope;
 data.mono(end-n+1:end)=data.mono(end-n+1:end).*flipud(envelope);
 data.mono=data.gain*data.mono;
 data.fade_samples=n; data.root=root;
+if strcmp(mode,'four')
+    data.stem_names={'vocals','drums','bass','other'};
+    data.stems=zeros(estimate.frame_count,4);
+    inputs=repmat(data.input,1,4);
+    for s=1:4
+        name=data.stem_names{s}; x=estimate.mono.(name);
+        assert(numel(x)==estimate.frame_count && all(isfinite(x)));
+        inputs(s).stem=name; inputs(s).path=estimate.source_paths.(name);
+        inputs(s).cache_sha256=estimate.phase1_result.listening_outputs.(name).sha256;
+        inputs(s).input_peak=max(abs(x));
+        x(1:n)=x(1:n).*envelope;
+        x(end-n+1:end)=x(end-n+1:end).*flipud(envelope);
+        data.stems(:,s)=x;
+    end
+    % Sum of per-source worst-case bounds covers every direction, gate and fade.
+    data.mix_bound_before_gain=max(sum(abs(data.bank),1),[],'all')*sum([inputs.input_peak]);
+    data.gain=min(.25,.5/max(data.mix_bound_before_gain,eps));
+    data.input=inputs;
+    data.alignment=struct('sample_rate',estimate.sample_rate_hz,'frames',estimate.frame_count, ...
+        'first_frame',estimate.start_frame_matlab_1_based, ...
+        'last_frame',estimate.end_frame_matlab_1_based_inclusive, ...
+        'full_track_frames',estimate.full_track_frames,'downmix','0.5*(left+right)', ...
+        'resampling',false,'trimming',false);
+end
 end
