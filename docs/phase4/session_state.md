@@ -1,5 +1,32 @@
 # Phase 4 当前会话锚点
 
+## Latest handoff: Phase 4.3a, 2026-10-30 (Australia/Sydney)
+
+The author preliminarily accepted Phase 4.2 and explicitly authorized this UI/interaction extension. This entry supersedes the historical Phase 4.2 stop boundary below. Worktree already contained uncommitted Phase 4.2 work; it was preserved. No commit/push.
+
+See `phase4_3a_spatial_studio.md` for the complete change list, commands, screenshot and verification. New `Phase4StudioView` owns the dark layout and mouse handling; new `Phase4MasterGain` applies one shared, smooth attenuation after the unchanged `Phase4Mixer.step`. New `phase4_studio_validate` covers geometry, overlap selection, callback independence and sample-accurate gain ramps. The four FIRs, 20 ms HRTF transitions, fixed gain/headroom, import worker, cache contract and Phase 1–3 sources/results are unchanged.
+
+Actual native checks: all four markers drag independently; targets/sliders/positions agree; +80° clamp works; background drag and wheel leave the stage unchanged; overlapping Vocals/Bass can be separated by selecting Vocals first. Native WAV file-dialog import hits the real FT cache. About 80 s of actual device playback during mouse/volume actions has zero underruns including startup/drain, peak 0.0470289, DSP mean/P99 0.7109/1.8253 ms. Screenshot: `outputs/phase4/phase4_3a_native_03/ui_playing.jpg`. Old visible lifecycle stress passes three opens/releases, zero underruns and 784 volume callbacks while playing. Old single/four/synthetic DSP checks and six cache safety tests pass. Final `phase4_3a_music_regression_01` WAV/MP3 integration passes all three real cache hits, three opens/releases, zero underruns and peak 0.0166683. `phase4_3a_launch_final_01` verifies the final interactive launcher waits for close and returns exit 0; final integration source hashes match current files.
+
+Important launch fix: PowerShell interactive modes now use `-wait -nodesktop -r`; `-batch` displays figures but rejects the blocking Load Music dialog. Batch remains correct for automated modes. App startup no longer calls `exportapp`, which stalled on an early dark UI/gauge build. Failed development runs remain intact and are excluded from accepted results.
+
+Launch: `addpath('D:\elec5305-project-540508923\scripts\matlab\phase4'); phase4_music;`. Default volume 65%; 100% is unity after the original fixed safety gain. Overlap: select stem name, then drag the common point. Stop now for the author's physical UI/headphone acceptance. No Phase 4.3b, new science, commit or push.
+
+
+## Latest handoff: Phase 4.2, 2026-10-30 (Australia/Sydney)
+
+This section supersedes the Phase 4.1b stop instruction below for this task. Starting state was clean `main` at `9a0ac47` (`4.1`). No commit/push is performed. Phase 1–3 code, models, data and frozen results are retained.
+
+New custom-music entry: `phase4_music`. It uses the same `phase4_four_realtime` playback loop and unchanged `Phase4Mixer` / `Phase4FIR`. `Phase4MusicImport` owns MATLAB decoding/resampling, asynchronous Windows process launching, result/error handling and stem verification; `scripts/python/phase4/separate_music.py` calls the frozen Phase 1 FT bag helpers. Full input WAV/MP3 is processed, with mono duplication and a 44.1 kHz stereo model input. The canonical source order is Vocals, Drums, Bass, Other.
+
+New user cache is isolated at `outputs/phase4/user_music_cache/<content-and-config-hash>/attempt_<UUID>/`. Cache identity uses canonical decoded prepared samples because MATLAB WAV headers can change across writes. It also includes original SHA, model weight/definition hashes, runtime/preparation/inference configuration and code identities. Successful hits validate all four FLOAT WAVs before skipping model load/inference. Partial/corrupt attempts remain intact. Import jobs and logs are under `outputs/phase4/import_jobs/`.
+
+See `phase4_2_custom_music.md` for complete file list, validation evidence and limitations. Root `PROJECT_STATE.md` is now the concise project-wide anchor. Launch: `addpath('D:\elec5305-project-540508923\scripts\matlab\phase4'); phase4_music;`. The launcher also has `music` and `music-test` modes.
+
+Stop after Phase 4.2; await the author's actual Load Music, dragging, Mute/Solo and headphone listening test. Do not implement Phase 4.3 or commit/push.
+
+Accepted verification: `outputs/phase4/phase4_2_music_02` ran actual FT inference on short mono-32k WAV and stereo-48k MP3 demo derivatives; a cleanup warning was then fixed. Final `phase4_2_music_final_01` reused those exact fixtures: all three loads hit cache, frame counts 110250/67253/110250 at 44.1 kHz, three writer opens/releases, zero underruns including warmup/drain, peak 0.0296065313, exit 0 and no cleanup warnings. It also checks malformed-file UI recovery, missing Python, real nonzero worker-exit recovery with the same importer, full 46.59 s preparation without a 12 s cap, and common-gain handling of resampling overshoot. Six stubbed-separator cache safety unittests pass. Existing four-track (`phase4_2_four_regression_01`), single-track/synthetic (`phase4_2_single_regression_01`) and old UI lifecycle (`phase4_2_legacy_ui_final_01`) checks all exit 0. Legacy UI renders 1455 blocks with three opens/releases and zero underruns. All 13 accepted production source hashes match current files. Failed development runs and every cache attempt are retained. No claim of subjective listening or long-duration stability is made.
+
 ## Latest handoff: Phase 4.1b, 2026-10-30 (Australia/Sydney)
 
 This section supersedes the historical single-stem handoff below. Starting state was clean `main` at `4e3413136c495287e4d6052bc88b2059f7fb7d97`; the earlier single-stem work was already tracked. No commit/push was made.

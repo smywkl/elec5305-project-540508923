@@ -131,7 +131,7 @@ Phase 3 additionally requires CIPIC `subject_008.sofa` and `subject_009.sofa`, t
 
 ## Next Steps
 
-**Phase 4 — Dynamic Spatialisation and Application (planned / next):** integrate the existing estimates, HRTF loader, static renderer and mixer; then implement independent stem trajectories, time-varying HRTF selection, smooth transitions without switching clicks, headroom/gain/clipping control, WAV export, listening examples and a lightweight demo/UI. The [architecture handoff](docs/architecture.md) identifies usable modules and remaining integration. Phase 3 is scientifically closed; Phase 4 has not started.
+**Phase 4 — Dynamic Spatialisation and Application:** Phase 4.1b provides the four-stem real-time MATLAB HRTF mixer; [Phase 4.2](docs/phase4/phase4_2_custom_music.md) adds local WAV/MP3 import, automatic HTDemucs-FT separation and validated caching. [Phase 4.3a](docs/phase4/phase4_3a_spatial_studio.md) adds the dark Spatial Studio UI, locked equal-radius stage, direct source dragging and smooth Master Volume. Start MATLAB with `addpath('scripts/matlab/phase4'); phase4_music;` from the repository root. For overlapping markers, select the stem name before dragging. The DSP and separation architecture remain unchanged. Awaiting the author's hands-on acceptance; see [PROJECT_STATE](PROJECT_STATE.md).
 
 ## Course Context
 
