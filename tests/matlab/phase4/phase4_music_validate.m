@@ -1,10 +1,11 @@
 function phase4_music_validate(outputDir,fixtureDir)
 %PHASE4_MUSIC_VALIDATE Engineering integration with tiny existing demo excerpts.
-% Actual FT inference on two files only. No evaluation data/results are written.
+% Reuse existing fixtures/caches when supplied. No scientific results are written.
 root=fileparts(fileparts(fileparts(fileparts(mfilename('fullpath')))));
 if nargin<2 || isempty(fixtureDir), fixtureDir=outputDir; end
 old=path;
-addpath(fileparts(mfilename('fullpath')),fullfile(root,'src','matlab','phase4'));
+addpath(fileparts(mfilename('fullpath')),fullfile(root,'src','matlab','phase4'), ...
+    fullfile(root,'scripts','matlab','phase4'));
 job=Phase4MusicImport(root);
 cleanup=onCleanup(@() cleanup_import(job,old)); %#ok<NASGU>
 if ~isfolder(outputDir), mkdir(outputDir); end
@@ -26,8 +27,7 @@ else
 end
 bad=fullfile(outputDir,'broken.wav'); fid=fopen(bad,'w'); fprintf(fid,'not audio'); fclose(fid);
 % Run real worker failure separately; then verify that the same UI importer can recover.
-python=getenv('ELEC5305_PYTHON');
-if isempty(python), python=fullfile('D:','anaconda','envs','elec5305','python.exe'); end
+python=phase4_python();
 failed=false;
 try
     job.start(wav,fullfile(root,'does-not-exist-python.exe'));
@@ -54,7 +54,6 @@ failureDir=tempname(jobs); mkdir(failureDir);
 request=fullfile(failureDir,'request.json'); fid=fopen(request,'w'); fprintf(fid,'{}'); fclose(fid);
 job.launch(request,python);
 timer=tic;
-workerFailed=false;
 while true
     assert(toc(timer)<180,'Worker failure test timed out.'); pause(.1);
     try

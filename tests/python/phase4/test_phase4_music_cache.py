@@ -10,7 +10,7 @@ import numpy as np
 import soundfile as sf
 import torch
 
-WORKER = Path(__file__).resolve().parents[1] / "scripts/python/phase4/separate_music.py"
+WORKER = Path(__file__).resolve().parents[3] / "scripts/python/phase4/separate_music.py"
 spec = importlib.util.spec_from_file_location("phase4_music_worker", WORKER)
 worker = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(worker)

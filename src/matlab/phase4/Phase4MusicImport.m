@@ -6,6 +6,8 @@ classdef Phase4MusicImport < handle
         process = []
         songName = ''
         sourceInfo
+        started
+        progressState
     end
     methods
         function obj=Phase4MusicImport(root), obj.root=root; end
@@ -59,10 +61,30 @@ classdef Phase4MusicImport < handle
             psi=System.Diagnostics.ProcessStartInfo;
             psi.FileName=python; psi.UseShellExecute=false; psi.CreateNoWindow=true;
             psi.WorkingDirectory=obj.root;
-            worker=fullfile(obj.root,'scripts','python','phase4','separate_music.py');
+            worker=fullfile(obj.root,'scripts','python','phase4','separate_music_progress.py');
             % These are generated file paths, not interpolated user arguments.
             psi.Arguments=sprintf('-B "%s" --request "%s"',worker,requestFile);
+            obj.started=tic;
+            obj.progressState=struct('stage','Starting worker / checking cache', ...
+                'indeterminate',true,'percent',NaN);
             obj.process=System.Diagnostics.Process.Start(psi);
+        end
+        function state=progress(obj)
+            state=obj.progressState;
+            files=dir(fullfile(obj.jobDir,'progress_*.json'));
+            if ~isempty(files)
+                [~,order]=sort({files.name}); file=fullfile(obj.jobDir,files(order(end)).name);
+                try
+                    next=jsondecode(fileread(file));
+                    if isfield(next,'stage') && isfield(next,'indeterminate') && isfield(next,'percent')
+                        obj.progressState=next; state=next;
+                    end
+                catch
+                    % Atomic replacement can briefly race Windows readers.
+                    % Keep the last valid state, never manufacture a percent.
+                end
+            end
+            state.elapsed_seconds=toc(obj.started);
         end
         function [done,result]=poll(obj)
             done=~isempty(obj.process) && obj.process.HasExited; result=[];

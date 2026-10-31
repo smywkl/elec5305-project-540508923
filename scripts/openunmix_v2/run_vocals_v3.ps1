@@ -1,5 +1,5 @@
 param(
-    [string]$PythonPath,
+    [string]$PythonPath = $env:ELEC5305_PYTHON,
     [switch]$Resume,
     [double]$MaxWallHours = 2.0,
     [double]$MaxEpochEquivalents = 5.0,
@@ -11,7 +11,7 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
-$projectRoot = $PSScriptRoot
+$projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $python = $null
 $trainer = Join-Path $projectRoot "scripts\openunmix_v2\train_target_v3.py"
 $outputDir = Join-Path $projectRoot "outputs\training\openunmix_v3\vocals"
@@ -32,8 +32,8 @@ if ($PythonPath) {
 }
 
 if (-not $python) {
-    $fallbackPython = "D:\anaconda\envs\elec5305\python.exe"
-    if (Test-Path -LiteralPath $fallbackPython) {
+    $fallbackPython = (Get-Command python -ErrorAction SilentlyContinue).Source
+    if ($fallbackPython -and (Test-Path -LiteralPath $fallbackPython)) {
         $python = $fallbackPython
     }
 }

@@ -1,5 +1,5 @@
 param(
-    [string]$PythonPath,
+    [string]$PythonPath = $env:ELEC5305_PYTHON,
     [double]$TargetEpoch = 5.0,
     [double]$PerTargetWallHours = 3.0,
     [int]$BatchSize = 16,
@@ -12,7 +12,7 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
-$projectRoot = $PSScriptRoot
+$projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $python = $null
 $trainer = Join-Path $projectRoot "scripts\openunmix_v2\train_target_v3.py"
 $orchestrator = Join-Path $projectRoot "scripts\openunmix_v2\v3_orchestration.py"
@@ -28,8 +28,8 @@ if ($PythonPath) {
     if (Test-Path -LiteralPath $candidate) { $python = $candidate }
 }
 if (-not $python) {
-    $fallbackPython = "D:\anaconda\envs\elec5305\python.exe"
-    if (Test-Path -LiteralPath $fallbackPython) { $python = $fallbackPython }
+    $fallbackPython = (Get-Command python -ErrorAction SilentlyContinue).Source
+    if ($fallbackPython -and (Test-Path -LiteralPath $fallbackPython)) { $python = $fallbackPython }
 }
 if (-not $python -or -not (Test-Path -LiteralPath $python)) {
     throw "elec5305 Python not found. Activate it or pass -PythonPath."

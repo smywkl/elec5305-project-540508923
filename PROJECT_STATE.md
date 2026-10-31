@@ -1,22 +1,23 @@
 # ELEC5305 project state
 
-Updated: 2026-10-30 (Australia/Sydney).
+Updated: 2026-10-31 (Australia/Sydney).
 
-Phase 1–3 scientific results remain frozen. The selected separator is official pretrained **HTDemucs-FT**, revision `d74ac89c3a1e874fc78f152555cf4d8533f06cd4`. Python owns inference; MATLAB owns input preparation, HRTF rendering, UI and playback. The author has preliminarily accepted Phase 4.2 import, automatic separation, four-track playback and independent angle controls.
+Phase 1–3 science and original results remain frozen. Phase 4.3c Spatial Studio is implemented and its final cleanup/regression is complete. No commit, push, Final Report or independent Demo was created.
 
-**Phase 4.3a is implemented and awaiting the author's hands-on acceptance.** Spatial Studio now has a dark grid layout, fixed stem colours, one-radius source markers, a fixed central listener, locked axes, direct marker dragging with slider synchronization, explicit overlap selection through stem-name buttons, and a post-mix Master Volume (default 65%, quadratic mapping, unity ceiling, 40 ms full-scale gain slew). The four FIR histories, nearest measured HRTFs, 20 ms direction crossfades, fixed headroom gain, Mute/Solo, shared writer/clock and WASAPI 1024 defaults are unchanged.
+The formal entry is `scripts/matlab/phase4/phase4_music.m`; the PowerShell launcher defaults to music mode and resolves its checkout from its own path. Set `ELEC5305_PYTHON` to the existing elec5305 interpreter. MATLAB resolves from PATH or `ELEC5305_MATLAB` / `-MatlabExecutable`. From the checkout root:
 
-WAV/MP3 import and the immutable user cache remain in `outputs/phase4/user_music_cache/`. The interactive PowerShell launch now uses `-wait -nodesktop -r` because MATLAB `-batch` prohibits Load Music's file dialog. Automated tests retain batch mode. Whole-window `exportapp` was removed from app startup after it stalled during development; native desktop capture supplies the UI screenshot.
-
-Accepted evidence and exact limitations are recorded in [Phase 4.3a implementation and validation](docs/phase4/phase4_3a_spatial_studio.md) and the [Phase 4 handoff](docs/phase4/session_state.md). Geometry/callback/gain tests, old four/single/synthetic DSP regressions and six cache safety tests pass. Actual mouse/device playback ran about 80 s with zero underruns, peak 0.04703 and DSP mean/P99 0.711/1.825 ms. The visible lifecycle stress run also has zero underruns and three opens/releases. Native WAV selection hit cache; WAV/MP3 integration reruns and error recovery are documented in the report.
-
-Launch from MATLAB:
-
-```matlab
-addpath('D:\elec5305-project-540508923\scripts\matlab\phase4');
-phase4_music;
+```powershell
+./scripts/matlab/phase4/invoke_phase4.ps1
 ```
 
-Load Music → Ready → Play. Drag a coloured point or use its slider. For overlapping points, click the desired stem name before dragging. Master Volume is global; 100% restores the previously validated headroom gain. Detailed selected-HRTF angles and device/error information remain in tooltips.
+Production modules now live in `src/matlab/phase4/`, validators in `tests/matlab/phase4/`, and seven Phase 4 notes are consolidated into [one technical guide](docs/phase4/technical_guide.md). Historical research entries remain where their frozen protocols expect them. Root training launchers moved beside Open-Unmix tools. Disconnected scaffolds, test fixtures, old runtime preferences and five proven duplicate development WAVs have recoverable external backups.
 
-**Stop at Phase 4.3a.** Await the author's actual UI/headphone experience. Subjective click audibility, acoustic latency, very long sessions and other displays/DPI settings are not established by automated checks. No trajectories, per-stem volume, WAV export, new science, commit or push are authorized.
+Final regression: 49 existing Python tests pass; five MATLAB synthetic scientific scripts pass; all 60 MATLAB sources parse. Phase 4 offline FIR/routing/Mute/Solo/gain/motion/export checks pass, including a full 262.597 s PCM24 export and independent filter reference. Real WAV/MP3 worker calls hit existing caches; device import/control/export/Auto tests pass at 44.1 kHz / 1024 frames / WASAPI Realtek headphones, with zero underruns including startup/drain. Native formal startup and mouse slider/stage synchronization pass. Export success/error/cancel/repeat is followed by working playback. No new real Demucs inference or training was required.
+
+Scientific evidence: 14 frozen hashes, 583 code/metadata hashes, 150 Phase 3 checkpoint files, ten aggregate artifacts, three SOFA hashes and ten Phase 1 HTDemucs-FT result records pass. Phase 3 remains 90 cases / 60 positive paired ΔR contrasts. The final model remains official pretrained HTDemucs-FT (revision d74ac89c3a1e874fc78f152555cf4d8533f06cd4), macro validation SI-SDR 9.792015744652476 dB. All retained numerical results are unchanged.
+
+Known pre-existing reproduction gap: V1/V2 and some V3 historical/resume checkpoints are missing in the initial inventory. Stored metrics/configuration/logs and the selected final model remain valid evidence, but full historical training reproduction is not available. Do not claim upstream pretrained-model exposure is ruled out by the project's train/validation split. Scientific results remain bounded objective signal-error findings; no formal perceptual study or independent-population claim is supported.
+
+Phase 4 is technically ready to freeze within its tested Windows/runtime/device scope. Final Report drafting can use the preserved frozen results once the author accepts the documented historical reproduction limitation; complete all-history reproducibility is not a passed gate. No algorithm change or main-result recalculation is indicated by this audit. Long songs require RAM; export is static and omits the post-song FIR tail. Earlier stress underruns remain part of the evidence; arbitrary-load stability and subjective headphone acceptance are not claimed.
+
+The [final audit and recovery record](docs/final_audit/repository_cleanup_and_audit.md) is authoritative for before/after counts, final Git state, exact tests, limitations and backup paths. Stop here for author review.

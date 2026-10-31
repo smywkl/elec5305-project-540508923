@@ -10,6 +10,8 @@ arguments
 end
 oldPath=path; pathCleanup=onCleanup(@() path(oldPath)); %#ok<NASGU>
 addpath(fileparts(mfilename('fullpath')));
+root=fileparts(fileparts(fileparts(fileparts(mfilename('fullpath')))));
+addpath(fullfile(root,'src','matlab','phase4'));
 d=phase4_prepare(); fs=d.fs; B=options.FrameSize;
 if isempty(options.OutputDir)
     options.OutputDir=fullfile(d.root,'outputs','phase4',char(datetime('now',Format='yyyyMMdd_HHmmss_SSS')));

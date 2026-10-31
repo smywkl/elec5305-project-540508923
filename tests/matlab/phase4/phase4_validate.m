@@ -3,7 +3,9 @@ function phase4_validate(outputDir)
 if ~isfolder(outputDir), mkdir(outputDir); end
 diary(fullfile(outputDir,'validation.log')); diaryCleanup=onCleanup(@() diary('off')); %#ok<NASGU>
 old=path; cleanup=onCleanup(@() path(old)); %#ok<NASGU>
-addpath(fileparts(mfilename('fullpath'))); d=phase4_prepare();
+root=fileparts(fileparts(fileparts(fileparts(mfilename('fullpath')))));
+addpath(fileparts(mfilename('fullpath')),fullfile(root,'src','matlab','phase4'));
+d=phase4_prepare();
 addpath(fullfile(d.root,'src','matlab','phase2','hrtf'));
 fprintf('INPUT %s %s frames=%d fs=%d gain=%.12g\n',d.input.track,d.input.stem,numel(d.mono),d.fs,d.gain);
 fprintf('MEASURED_GRID=%s\n',mat2str(d.angles));

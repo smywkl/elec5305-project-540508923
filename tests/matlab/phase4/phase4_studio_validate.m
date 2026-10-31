@@ -17,6 +17,13 @@ v.onAngle=@angleChanged;
 limits=[v.axes.XLim v.axes.YLim v.axes.DataAspectRatio];
 assert(isempty(v.axes.Interactions) && strcmp(v.axes.Toolbar.Visible,'off'));
 assert(strcmp(v.axes.XLimMode,'manual') && strcmp(v.axes.YLimMode,'manual'));
+v.setImportProgress(true,struct('stage','Checking cache','indeterminate',true,'percent',NaN,'elapsed_seconds',5));
+assert(strcmp(v.importTrack.Visible,'on') && contains(v.importLabel.Text,'Indeterminate') && contains(v.importLabel.Text,'5 s'));
+v.setImportProgress(true,struct('stage','Separating','indeterminate',false,'percent',25,'elapsed_seconds',10));
+assert(contains(v.importLabel.Text,'25%') && v.importFill.Position(3)==.25);
+v.setImportProgress(true,struct('stage','Cache ready','indeterminate',false,'percent',100,'elapsed_seconds',2,'cache_hit',true));
+assert(contains(v.importLabel.Text,'Cache ready') && ~contains(v.importLabel.Text,'Inference'));
+v.setImportProgress(false,struct()); assert(strcmp(v.importTrack.Visible,'off'));
 % Background motion without a marker-down event does nothing.
 before=targets; v.dragAt(1,0); v.figure.WindowButtonMotionFcn([],[]);
 assert(isequal(before,targets) && v.dragging==0);
@@ -25,10 +32,10 @@ targets(:)=0; v.updateAngles(targets,selected);
 for s=1:4
     v.selectStem(s); before=targets;
     v.beginDrag(4,[]); assert(v.dragging==s);
-    a=(-1)^s*(15+10*s); v.dragAt(sind(a),cosd(a)); v.endDrag();
+    a=(-1)^s*(15+10*s); [px,py]=Phase4StageProjection.project(a); v.dragAt(px,py); v.endDrag();
     assert(abs(targets(s)-a)<1e-10 && isequal(targets(setdiff(1:4,s)),before(setdiff(1:4,s))));
     assert(abs(v.sliders(s).Value-a)<1e-10 && contains(v.labels(s).Text,sprintf('%+.1f',a)));
-    assert(abs(hypot(v.markers(s).XData,v.markers(s).YData)-1)<1e-12);
+    assert(abs(Phase4StageProjection.logicalRadius(v.markers(s).XData,v.markers(s).YData)-1)<1e-12);
     targets(:)=0; v.updateAngles(targets,selected);
 end
 % Clamp behind/outside positions, ignore listener singularity, release capture.
@@ -40,7 +47,8 @@ v.dragAt(0,1); assert(targets(2)==-80);
 for s=1:4
     a=20*(-1)^s; v.sliders(s).ValueChangingFcn([],struct('Value',a));
     assert(targets(s)==a && v.sliders(s).Value==a);
-    assert(abs(v.markers(s).XData-sind(a))<1e-12 && abs(v.markers(s).YData-cosd(a))<1e-12);
+    [px,py]=Phase4StageProjection.project(a);
+    assert(abs(v.markers(s).XData-px)<1e-12 && abs(v.markers(s).YData-py)<1e-12);
 end
 assert(isequal(limits,[v.axes.XLim v.axes.YLim v.axes.DataAspectRatio]));
 fprintf('STUDIO_TEST geometry pass\n');
@@ -50,34 +58,34 @@ fprintf('STUDIO_TEST gain checks\n');
 % A reference sample-by-sample ramp, rapid retargets, zero/unity and B<ramp.
 fs=44100; error=0; maxSlew=0; peak=0; output=[];
 for B=[256 1024]
-    gain=Phase4MasterGain(fs,65); current=(.65)^2; previous=current;
+    gain=Phase4MasterGain(fs,65); current=1.25*(.65)^2; previous=current;
     percent=[0 100 25 90 0 0 0 0 0 0 0 0 100 100 100 100 100 100 100 100];
     for k=1:numel(percent)
-        gain.setPercent(percent(k)); target=(percent(k)/100)^2;
+        gain.setPercent(percent(k)); target=1.25*(percent(k)/100)^2;
         t=((k-1)*B+(0:B-1))'/fs;
         x=[.49*sin(2*pi*440*t),.31*cos(2*pi*630*t)];
         [y,envelope]=gain.step(x); reference=zeros(B,1);
         for n=1:B
-            current=current+sign(target-current)*min(1/round(.04*fs),abs(target-current));
+            current=current+sign(target-current)*min(1.25/round(.04*fs),abs(target-current));
             reference(n)=current;
         end
         error=max(error,max(abs(y-x.*reference),[],'all'));
         maxSlew=max(maxSlew,max(abs(diff([previous;envelope])))); previous=envelope(end);
-        assert(all(envelope>=0 & envelope<=1) && all(isfinite(y),'all') && size(y,2)==2);
+        assert(all(envelope>=0 & envelope<=1.25) && all(isfinite(y),'all') && size(y,2)==2);
         peak=max(peak,max(abs(y),[],'all'));
         if B==1024, output=[output;y]; end %#ok<AGROW>
     end
-    assert(gain.current==1);
+    assert(gain.current==1.25);
 end
-assert(error<1e-12 && maxSlew<=1/1764+1e-14 && peak<.5);
+assert(error<1e-12 && maxSlew<=1.25/1764+1e-14 && peak<.625);
 audiowrite(fullfile(outputDir,'master_sweep.wav'),output,fs,'BitsPerSample',24);
 result=struct('complete',true,'version',version,'geometry_radius',1,'directions',[-80 80], ...
     'all_four_independent',all(eventCount>0),'overlap_selection',true,'slider_sync',true, ...
     'background_noop',true,'axes_locked',true,'master_reference_error',error, ...
-    'max_gain_step',maxSlew,'gain_step_bound',1/1764,'peak',peak,'sample_rate',fs, ...
+    'max_gain_step',maxSlew,'gain_step_bound',1.25/1764,'peak',peak,'sample_rate',fs, ...
     'channels',2,'channel_order','left,right','frames',size(output,1), ...
     'duration_seconds',size(output,1)/fs,'all_samples_finite',all(isfinite(output),'all'), ...
-    'clipped_samples',nnz(abs(output)>=1),'gain_mapping','(percent/100)^2', ...
+    'clipped_samples',nnz(abs(output)>=1),'gain_mapping','1.25*(percent/100)^2', ...
     'scope','Deterministic callbacks and signal checks; physical mouse/device validated separately.');
 fid=fopen(fullfile(outputDir,'validation.json'),'w'); fprintf(fid,'%s',jsonencode(result,PrettyPrint=true)); fclose(fid);
 fprintf('PHASE4_STUDIO_VALIDATION_PASS gain_error=%.3g peak=%.4f\n',error,peak);
