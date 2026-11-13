@@ -4,8 +4,9 @@
 
 - [Reviewer Guide](docs/REVIEWER_GUIDE.md) — Phase 1–4 code, documentation and evidence.
 - [Representative results](docs/REVIEWER_GUIDE.md#key-experimental-results)
-- [Spatial Studio launch steps](docs/REVIEWER_GUIDE.md#how-to-run-spatial-studio)
-- **Final Report** — public link pending.
+- [**Run Spatial Studio**](docs/REVIEWER_GUIDE.md#how-to-run-spatial-studio)
+- [**Reproduce Phase 1–3 Experiments**](docs/REPRODUCE_EXPERIMENTS.md)
+- **Final Report** — submitted through Canvas.
 - **Demonstration Video** — submitted directly through Canvas.
 
 This ELEC5305 semester project investigates how deep-learning source separation can support a dynamic binaural music renderer for ordinary stereo recordings. The final system concept separates a song into vocals, drums, bass and other stems, renders each stem with an HRTF, and combines the results into a headphone-ready binaural mix.
@@ -132,6 +133,8 @@ The [architecture note](docs/architecture.md) gives the current component bounda
 
 ## Reproducing the Work
 
+Start with the [Phase 1–3 reproduction guide](docs/REPRODUCE_EXPERIMENTS.md) for commands, input files and the order of dependencies.
+
 The source-separation environment is specified by [`environment.yml`](environment.yml) and [`requirements.txt`](requirements.txt). Python owns HTDemucs-FT inference, source metrics, aggregation and statistical analysis. MATLAB owns HRTF loading, convolution, binaural rendering and the core DSP/mechanism computations. The project does not claim a single-command full reproduction.
 
 Frozen Phase 2 source metrics require `museval==0.4.1` and, on Windows, `ffmpeg` and `ffprobe` in the selected Conda runtime. These are now recorded in the environment files. Preserve the validated local runtime; this audit did not install dependencies or recreate the environment. The standard-library test harness runs all existing Python cases/functions in that environment without requiring pytest:
@@ -160,7 +163,7 @@ Phase 3 additionally requires CIPIC `subject_008.sofa` and `subject_009.sofa`, t
 
 ## Current Engineering Boundary
 
-**Phase 4.3c:** Export WAV snapshots current angles/Mute/Solo/volume, pauses playback and renders the complete song as 44.1 kHz stereo PCM24. Auto contributes its click-time angle; trajectories are not exported. Existing files require explicit replacement confirmation. Real-device regression passed; subjective headphone judgement and arbitrary-load stability are not established by those tests. No independent Demo or Final Report was created in the cleanup. See [PROJECT_STATE](PROJECT_STATE.md).
+**Phase 4.3c:** Export WAV snapshots current angles/Mute/Solo/volume, pauses playback and renders the complete song as 44.1 kHz stereo PCM24. Auto contributes its click-time angle; trajectories are not exported. Existing files require explicit replacement confirmation. Device results apply to the recorded configurations. See [PROJECT_STATE](PROJECT_STATE.md) for the historical WASAPI and DirectSound results.
 
 ## Course Context
 

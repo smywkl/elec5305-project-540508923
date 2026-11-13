@@ -24,3 +24,6 @@ checkpoints/
 
 # Local third-party training sources
 /.external/
+
+# Local report and submission materials
+/report_workspace/
