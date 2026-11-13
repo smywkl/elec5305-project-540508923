@@ -4,6 +4,7 @@ classdef Phase4MusicImport < handle
         root
         jobDir = ''
         process = []
+        workerStderr = []
         songName = ''
         sourceInfo
         started
@@ -60,6 +61,7 @@ classdef Phase4MusicImport < handle
             assert(ispc,'ELEC5305:Import:Platform','The process launcher currently supports Windows.');
             psi=System.Diagnostics.ProcessStartInfo;
             psi.FileName=python; psi.UseShellExecute=false; psi.CreateNoWindow=true;
+            psi.RedirectStandardError=true;
             psi.WorkingDirectory=obj.root;
             worker=fullfile(obj.root,'scripts','python','phase4','separate_music_progress.py');
             % These are generated file paths, not interpolated user arguments.
@@ -68,6 +70,7 @@ classdef Phase4MusicImport < handle
             obj.progressState=struct('stage','Starting worker / checking cache', ...
                 'indeterminate',true,'percent',NaN);
             obj.process=System.Diagnostics.Process.Start(psi);
+            obj.workerStderr=obj.process.StandardError.ReadToEndAsync();
         end
         function state=progress(obj)
             state=obj.progressState;
@@ -89,18 +92,24 @@ classdef Phase4MusicImport < handle
         function [done,result]=poll(obj)
             done=~isempty(obj.process) && obj.process.HasExited; result=[];
             if ~done, return; end
-            code=obj.process.ExitCode; obj.process.Dispose(); obj.process=[];
+            code=obj.process.ExitCode; diagnostic=strtrim(char(obj.workerStderr.Result));
+            obj.process.Dispose(); obj.process=[]; obj.workerStderr=[];
             file=fullfile(obj.jobDir,'result.json');
+            logFile=fullfile(obj.jobDir,'python.log');
+            if ~isempty(diagnostic)
+                fid=fopen(logFile,'a','n','UTF-8');
+                if fid>=0, fprintf(fid,'\n%s\n',diagnostic); fclose(fid); end
+            end
             assert(isfile(file),'ELEC5305:Import:Worker', ...
-                'Python exited (%d) without a result. Check %s',code,fullfile(obj.jobDir,'python.log'));
+                'Python exited (%d) without a result. %s\nJob directory: %s',code,diagnostic,obj.jobDir);
             result=jsondecode(fileread(file));
             assert(code==0 && strcmp(result.status,'complete'),'ELEC5305:Import:Worker', ...
-                'Separation failed. %s Log: %s',message_or_empty(result),fullfile(obj.jobDir,'python.log'));
+                'Separation failed. %s Log: %s',message_or_empty(result),logFile);
         end
         function cancel(obj)
             if isempty(obj.process), return; end
             if ~obj.process.HasExited, obj.process.Kill(); obj.process.WaitForExit(5000); end
-            obj.process.Dispose(); obj.process=[];
+            obj.process.Dispose(); obj.process=[]; obj.workerStderr=[];
         end
         function delete(obj), obj.cancel(); end
     end

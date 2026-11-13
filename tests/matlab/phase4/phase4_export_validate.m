@@ -71,11 +71,11 @@ assert(routingError<1e-12 && isequaln(before,state(live,master,motion)));
 settings=snapshot; settings.volume_percent=0; silent=Phase4WavExport.render(short,settings); assert(all(silent==0,'all'));
 settings.volume_percent=100; loud=Phase4WavExport.render(short,settings);
 assert(max(abs(loud-base/(.65^2)),[],'all')<1e-12);
-% Check actual 4.3b signal against 4.3a's previous steady gain at 65%.
-oldGain=.65^2; newGain=master.current;
+% Check the 30% increase over the previous steady gain at 65%.
+oldGain=1.25*.65^2; newGain=master.current;
 sameMix=Phase4Mixer(short); sameMix.reset(); testMix=sameMix.step(short.stems(1:1024,:));
-gainSignalError=max(abs(testMix*newGain-testMix*oldGain*1.25),[],'all');
-assert(newGain==1.25*oldGain && gainSignalError<1e-15);
+gainSignalError=max(abs(testMix*newGain-testMix*oldGain*1.30),[],'all');
+assert(abs(newGain-1.30*oldGain)<1e-15 && gainSignalError<1e-15);
 % Conservative common scaling for an intentionally hot offline-only input.
 hot=short;
 hotFactor=max(1000,10/(short.gain*max(sum(abs(short.bank),1),[],'all')*sum(max(abs(short.stems),[],1))));

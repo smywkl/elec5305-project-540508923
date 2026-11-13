@@ -22,14 +22,14 @@ The repository contains the completed source-separation study, fixed-HRTF mechan
 | 3 | Small cross-HRTF-subject robustness extension | **Complete / Scientifically closed through Phase 3.3** |
 | 4 | Spatial Studio, sample-based Auto and static full-song WAV export | **Implemented / regression verified through 4.3c** |
 
-Start Spatial Studio from the checkout root:
+Start Spatial Studio in the MATLAB Desktop Command Window. Use the path to your checkout.
 
-```powershell
-$env:ELEC5305_PYTHON = 'D:/anaconda/envs/elec5305/python.exe' # Select your existing environment.
-./scripts/matlab/phase4/invoke_phase4.ps1
+```matlab
+cd('D:\elec5305-project-540508923')
+launch_spatial_studio
 ```
 
-MATLAB is discovered on PATH; `-MatlabExecutable` or `ELEC5305_MATLAB` overrides it. From another working directory, invoke the launcher's absolute path. Direct MATLAB use: add the checkout's `scripts/matlab/phase4` to the path, then call `phase4_music`. See the [Phase 4 technical guide](docs/phase4/technical_guide.md) for controls, dependencies and validation modes, and the [final audit](docs/final_audit/repository_cleanup_and_audit.md) for the freeze decision and known reproduction limits.
+The launcher finds the project Python environment and tries WASAPI, then DirectSound if WASAPI fails. To force DirectSound, run `launch_spatial_studio('Driver','DirectSound')`. See the [Reviewer Guide](docs/REVIEWER_GUIDE.md#how-to-run-spatial-studio) for prerequisites, device selection and troubleshooting. The [Phase 4 technical guide](docs/phase4/technical_guide.md) documents validation modes.
 
 ## Project Pipeline
 

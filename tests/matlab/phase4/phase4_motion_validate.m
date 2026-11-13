@@ -42,19 +42,19 @@ a.stop(); assert(~any(a.enabled)); oldSamples=a.samples; a.advance(fs); assert(i
 angles=-80:.1:80; [x,y]=Phase4StageProjection.project(angles);
 projectionError=max(abs(Phase4StageProjection.unproject(x,y)-angles));
 assert(projectionError<1e-12 && max(abs(Phase4StageProjection.logicalRadius(x,y)-1))<1e-12);
-% Same percentage is exactly 1.25 times the old steady-state gain.
+% Check the master mapping and the output bound at the same percentages.
 gain=Phase4MasterGain(fs,65); gainError=0;
 for percent=[0 10 65 100]
     gain.setPercent(percent); gain.reset();
     [z,e]=gain.step(.5*ones(1024,2));
-    gainError=max(gainError,max(abs(e-1.25*(percent/100)^2)));
-    assert(all(isfinite(z),'all') && max(abs(z),[],'all')<=.625);
+    gainError=max(gainError,max(abs(e-1.625*(percent/100)^2)));
+    assert(all(isfinite(z),'all') && max(abs(z),[],'all')<=.8125);
 end
 assert(gainError==0);
 result=struct('complete',true,'sample_rate',fs,'degrees_per_second',speed, ...
     'sample_reference_max_error_deg',worst,'projection_inverse_error_deg',projectionError, ...
     'partition_independent',true,'independent_enable_disable',true,'pause_freeze',true, ...
-    'stop_disables_auto',true,'gain_ratio',1.25,'safe_mix_bound',.625);
+    'stop_disables_auto',true,'gain_ratio',1.30,'safe_mix_bound',.8125);
 fid=fopen(fullfile(outputDir,'validation.json'),'w'); fprintf(fid,'%s',jsonencode(result,PrettyPrint=true)); fclose(fid);
 fprintf('PHASE4_MOTION_VALIDATION_PASS error=%.3g projection=%.3g\n',worst,projectionError);
 end

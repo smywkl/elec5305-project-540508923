@@ -7,27 +7,21 @@ Historical run IDs below remain unchanged; frozen Phase 1–3 results are separa
 
 ## Launch and dependencies
 
-The single product entry is `scripts/matlab/phase4/phase4_music.m`.
-From any working directory, invoke the PowerShell launcher by its full path:
-
-```powershell
-$env:ELEC5305_PYTHON = 'D:/anaconda/envs/elec5305/python.exe' # Local example; select your environment.
-& ./scripts/matlab/phase4/invoke_phase4.ps1 -Mode music
-```
-
-The launcher resolves the checkout from its own location. MATLAB is resolved from
-`-MatlabExecutable`, `ELEC5305_MATLAB`, or PATH; Python from `PythonExecutable`,
-`ELEC5305_PYTHON`, an active Conda environment, or PATH. Override the interpreter
-explicitly if PATH selects a different environment. Direct MATLAB use:
+Start the app in MATLAB Desktop from the checkout directory.
 
 ```matlab
-addpath(fullfile(checkoutRoot,'scripts','matlab','phase4'));
-phase4_music('PythonExecutable',pythonExecutable);
+cd('D:\elec5305-project-540508923')  % Use your checkout path.
+launch_spatial_studio
 ```
 
-Interactive music mode uses MATLAB `-r`, because `-batch` disallows blocking native
-file dialogs. Automated tests use `-batch` and private run directories. Preferences
-are isolated per child process; no global MATLAB path or preferences are changed.
+The Desktop launcher resolves the checkout from its own location and calls
+`phase4_music`. It checks the selected Python environment and accepts
+`PythonExecutable`, `Driver` and `Device` overrides. On Play, the automatic
+driver tries WASAPI and then DirectSound. See the [Reviewer Guide](../REVIEWER_GUIDE.md#how-to-run-spatial-studio)
+for model setup and device selection.
+
+The PowerShell launcher remains available for automated and historical runs.
+Its automated modes use MATLAB `-batch` and private run directories and preferences.
 
 Validated runtime: MATLAB R2026a Update 5 / win64, Audio Toolbox, DSP System
 Toolbox and Signal Processing Toolbox; Statistics Toolbox is not required. The
@@ -153,10 +147,10 @@ inverse azimuth = atan2d(x,y/0.58), clamped to [-80,80]
 ```
 
 Logical source radius is one; no distance or elevation enters the renderer.
-Master Volume is the common stereo gain `1.25*(percent/100)^2`, default 65%
-(0.528125), zero at 0%, maximum 1.25, with a 40 ms full-scale slew. This is exactly
-1.25 amplitude / +1.9382 dB relative to 4.3a at equal nonzero percentage. The
-original 0.5 mixer bound becomes at most 0.625 after Master.
+Master Volume is the common stereo gain `1.625*(percent/100)^2`, default 65%
+(0.6865625), zero at 0%, with a 40 ms full-scale slew. At the same nonzero slider
+setting, amplitude is 30% higher (+2.28 dB) than with the previous 1.25 maximum.
+The 0.5 mixer bound gives a maximum post-Master amplitude of 0.8125.
 
 Auto is independent per source: 12°/s, continuous reflections at ±80°, starting
 at the current target toward positive. The pure trajectory is:

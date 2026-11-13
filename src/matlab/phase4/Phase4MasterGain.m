@@ -1,8 +1,8 @@
 classdef Phase4MasterGain < handle
     % One post-mix gain envelope; never changes the four FIR states.
-    % 25% gain increase over 4.3a, with the same 40 ms full-scale slew.
+    % Full-scale gain slews over 40 ms.
     properties (Constant)
-        maxGain = 1.25
+        maxGain = 1.625
     end
     properties (SetAccess=private)
         percent

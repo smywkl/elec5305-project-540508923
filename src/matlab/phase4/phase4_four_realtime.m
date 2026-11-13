@@ -33,8 +33,8 @@ else
     d=phase4_prepare('four');
 end
 fs=d.fs; B=options.FrameSize; N=size(d.stems,1);
-if isempty(options.PythonExecutable)
-    if options.CustomMusic, options.PythonExecutable=phase4_python(); end
+if options.CustomMusic
+    options.PythonExecutable=phase4_python(options.PythonExecutable);
 end
 pendingFile=''; importing=false; readyMusic=~options.CustomMusic;
 musicState='Ready'; songName='Phase 4.1b development excerpt'; lastError='';
@@ -42,9 +42,8 @@ if options.CustomMusic, songName='Choose a WAV or MP3 with Load Music'; musicSta
 imports=struct([]); importIndex=0; importPlayAt=Inf;
 testAttempt=0; importErrors=0;
 engine=Phase4Mixer(d);
-w=audioDeviceWriter('SampleRate',fs,'Driver',options.Driver,'BufferSize',B);
-if ~isempty(options.Device), w.Device=options.Device; end
-writerCleanup=onCleanup(@() release(w)); %#ok<NASGU>
+w=[]; activeDriver=options.Driver; activeDevice=options.Device; playbackError='';
+writerCleanup=[];
 fprintf('PHASE4_FOUR_STREAM %s fs=%d B=%d gain=%.12g\n',version,fs,B,d.gain);
 clock=tic; cursor=1; playing=false; paused=false; closing=false; ending=false;
 stopKind=''; opened=false; fadeIn=0; fadeOut=0; tailLeft=0;
@@ -89,11 +88,11 @@ try
             performExport();
         end
         if ~isempty(pendingFile) && ~playing && ~opened
-            file=pendingFile; pendingFile=''; readyMusic=false; paused=false; cursor=1;
+            file=pendingFile; pendingFile='';
             musicState='Loading'; importStart=toc(clock); dirty=true; refreshUI(); drawnow;
             try
                 importer.start(file,options.PythonExecutable);
-                songName=importer.songName; importing=true; musicState='Separating';
+                importing=true; musicState='Separating';
             catch ME
                 importError(ME);
             end
@@ -114,7 +113,8 @@ try
                     for k=1:4
                         sliders(k).Value=engine.targets(k); mutes(k).Value=false; solos(k).Value=false; view.autos(k).Value=false;
                     end
-                    importing=false; readyMusic=true; musicState='Ready'; lastError='';
+                    importing=false; readyMusic=true; musicState='Ready'; lastError=''; playbackError='';
+                    songName=importer.songName;
                     view.setImportProgress(false,struct());
                     importIndex=importIndex+1;
                     imports(importIndex).song=songName; imports(importIndex).cache_hit=result.cache_hit;
@@ -140,14 +140,25 @@ try
         if ~opened
             engine.reset(); refreshUI(); drawnow; pause(.05); drawnow;
             % Complete Play-state layout before starting the device clock.
-            setup(w,zeros(B,2));
+            try
+                w=openWriter();
+                writerCleanup=onCleanup(@() release(w));
+            catch ME
+                if options.AutoTest || ~isempty(options.ImportTestFiles), rethrow(ME); end
+                fprintf('AUDIO_DEVICE_ERROR %s: %s\n',ME.identifier,ME.message);
+                playbackError=ME.message; playing=false; stopKind=''; dirty=true;
+                refreshUI();
+                uialert(f,ME.message,'Audio output unavailable');
+                continue;
+            end
             for warm=1:ceil(.15*fs/B)
                 engine.step(zeros(B,4)); startupUnderrun=startupUnderrun+double(w(zeros(B,2)));
             end
             engine.reset(); master.reset(); sessions=sessions+1; opened=true; fadeIn=d.fade_samples;
             ending=false; appliedSequence=sequence; previousOutput=zeros(1,2);
             previousReturn=NaN; previousStart=NaN;
-            deviceInfo=info(w); fprintf('SESSION=%d DEVICE=%s\n',sessions,w.Device);
+            deviceInfo=info(w); activeDriver=w.Driver; activeDevice=w.Device;
+            fprintf('SESSION=%d DRIVER=%s DEVICE=%s\n',sessions,activeDriver,activeDevice);
             recordLife(1); dirty=true; nextUI=toc(clock)+.1;
         end
         if ~isempty(stopKind) && ~ending
@@ -196,7 +207,7 @@ try
         end
         if ending && fadeOut==0 && tailLeft<=0
             for drain=1:4, startupUnderrun=startupUnderrun+double(w(zeros(B,2))); end
-            release(w); releases=releases+1; opened=false; playing=false;
+            releaseWriter(); releases=releases+1; opened=false; playing=false;
             if strcmp(stopKind,'pause')
                 paused=true; recordLife(2);
             else
@@ -223,7 +234,7 @@ try
 catch ME
     failure=ME; fprintf('STREAM_ERROR %s: %s\n',ME.identifier,ME.message);
 end
-release(w); if opened, releases=releases+1; end
+releaseWriter(); if opened, releases=releases+1; end
 base={'session','start_s','source_cursor','drawnow_s','dsp_s','writer_s','gap_after_writer_s', ...
     'start_interval_s','underrun_samples','peak','boundary_step','ending'};
 namesCSV=[base,strcat('target_',d.stem_names),strcat('selected_',d.stem_names), ...
@@ -243,8 +254,8 @@ writetable(array2table(events(1:event,:),'VariableNames', ...
 writetable(array2table(lifecycle(1:life,:),'VariableNames', ...
     {'time_s','kind_1_open_2_pause_3_stop','session','cursor'}),fullfile(out,'lifecycle.csv'));
 summary=struct('version',version,'timestamp',char(datetime('now',TimeZone='Australia/Sydney')), ...
-    'sample_rate',fs,'frame_size',B,'frame_ms',1000*B/fs,'driver',options.Driver, ...
-    'device',w.Device,'device_info',deviceInfo,'input',d.input,'alignment',d.alignment, ...
+    'sample_rate',fs,'frame_size',B,'frame_ms',1000*B/fs,'driver',activeDriver, ...
+    'device',activeDevice,'device_info',deviceInfo,'input',d.input,'alignment',d.alignment, ...
     'gain',d.gain,'conservative_mix_bound',d.gain*d.mix_bound_before_gain, ...
     'directions',d.angles,'hrir_samples',size(d.bank,1),'crossfade_samples',d.fade_samples, ...
     'underrun_samples',sum(tableFrames.underrun_samples), ...
@@ -257,7 +268,7 @@ summary=struct('version',version,'timestamp',char(datetime('now',TimeZone='Austr
     'latency_scope','Callback to frame ready; excludes event queue, hardware buffers and acoustic latency.', ...
     'pause_policy','Fade out and release; resume cursor with reset history and fade in.');
 summary.master_volume=struct('default_percent',65,'final_percent',master.percent, ...
-    'mapping','1.25*(percent/100)^2','max_gain',master.maxGain,'full_scale_slew_ms',40, ...
+    'mapping',sprintf('%g*(percent/100)^2',master.maxGain),'max_gain',master.maxGain,'full_scale_slew_ms',40, ...
     'events_while_playing',nnz(volumeEvents(1:volumeEvent,3)));
 summary.spatial_ui=struct('radius',1,'limits',[-80 80], ...
     'axes_interactions_disabled',isempty(view.axes.Interactions), ...
@@ -291,6 +302,38 @@ if ~isempty(failure), rethrow(failure); end
 if options.AutoTest
     fprintf('PHASE4_FOUR_UI_TEST_PASS\n');
 end
+
+    function writer=openWriter()
+        drivers={options.Driver};
+        if strcmpi(options.Driver,'auto'), drivers={'WASAPI','DirectSound'}; end
+        failures=cell(size(drivers));
+        for i=1:numel(drivers)
+            driver=drivers{i}; writer=[];
+            try
+                writer=audioDeviceWriter('SampleRate',fs,'Driver',driver,'BufferSize',B);
+                devices=getAudioDevices(writer);
+                if ~isempty(options.Device)
+                    assert(any(strcmp(devices,options.Device)),'ELEC5305:Audio:Device', ...
+                        'Device "%s" is unavailable. Available devices: %s', ...
+                        options.Device,strjoin(string(devices),', '));
+                    writer.Device=options.Device;
+                end
+                setup(writer,zeros(B,2));
+                return;
+            catch ME
+                if ~isempty(writer), release(writer); end
+                failures{i}=sprintf('%s: %s',driver,ME.message);
+                fprintf('AUDIO_DEVICE_ATTEMPT %s\n',failures{i});
+            end
+        end
+        error('ELEC5305:Audio:Output', ...
+            ['Cannot open audio output at %d Hz. Check the Windows output or relaunch ' ...
+            'with Driver and Device from getAudioDevices.\n%s'],fs,strjoin(failures,newline));
+    end
+    function releaseWriter()
+        writerCleanup=[];
+        w=[];
+    end
 
     function setAngle(s,angle,source)
         if exportBusy, return; end
@@ -334,7 +377,7 @@ end
     function playNow()
         if exportBusy || playing || ~readyMusic || importing || ~isempty(pendingFile), return; end
         if ~paused, cursor=1; end
-        playing=true; stopKind=''; dirty=true;
+        playbackError=''; playing=true; stopKind=''; dirty=true;
     end
     function requestStop(kind)
         if exportBusy && ~playing && ~opened
@@ -356,7 +399,12 @@ end
         if playing, state='Playing'; elseif paused, state='Paused'; else, state='Stopped / ready'; end
         if options.CustomMusic && readyMusic && ~playing && ~paused, state='Ready'; end
         if ending && playing, state='Fading / releasing'; end
-        if options.CustomMusic && (~readyMusic || importing || ~isempty(pendingFile)), state=musicState; end
+        if options.CustomMusic && (~readyMusic || importing || ~isempty(pendingFile) || ~isempty(lastError))
+            state=musicState;
+        end
+        if ~isempty(playbackError) && ~playing && ~importing && isempty(pendingFile)
+            state='Audio output unavailable';
+        end
         busy=importing || ~isempty(pendingFile) || strcmp(musicState,'Loading');
         if importing
             importState=importer.progress(); state=importState.stage;
@@ -371,8 +419,10 @@ end
             if ~importState.indeterminate, importUIRealFrames=importUIRealFrames+1; end
         end
         view.status.Text=state;
-        view.status.Tooltip=sprintf('%d samples | underrun %d | %s',B,totalUnderrun,lastError);
-        view.songLabel.Text=songName; view.songLabel.Tooltip=songName;
+        view.status.Tooltip=sprintf('%d samples | underrun %d | %s%s',B,totalUnderrun,lastError,playbackError);
+        shownSong=songName;
+        if importing, shownSong=importer.songName; end
+        view.songLabel.Text=shownSong; view.songLabel.Tooltip=shownSong;
         view.setProgress((cursor-1)/max(1,N));
         view.timeLabel.Text=sprintf('%s / %s',formatTime((cursor-1)/fs),formatTime(N*readyMusic/fs));
         playButton.Enable=matlab.lang.OnOffSwitchState(~playing && readyMusic && ~importing && isempty(pendingFile));
@@ -389,11 +439,12 @@ end
         queueMusic(fullfile(folder,file));
     end
     function queueMusic(file)
-        pendingFile=file; musicState='Loading'; dirty=true; lastError='';
+        pendingFile=file; musicState='Loading'; dirty=true; lastError=''; playbackError='';
         requestStop('import');
     end
     function importError(ME)
-        importer.cancel(); importing=false; readyMusic=false; musicState='Error';
+        importer.cancel(); importing=false; musicState='Import failed';
+        if readyMusic, musicState='Import failed - previous song ready'; end
         view.setImportProgress(false,struct());
         lastError=ME.message; dirty=true;
         fprintf('IMPORT_ERROR %s: %s\n',ME.identifier,ME.message);

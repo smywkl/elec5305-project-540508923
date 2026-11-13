@@ -57,35 +57,36 @@ exportgraphics(v.axes,fullfile(outputDir,'stage_geometry.png'),'Resolution',150)
 fprintf('STUDIO_TEST gain checks\n');
 % A reference sample-by-sample ramp, rapid retargets, zero/unity and B<ramp.
 fs=44100; error=0; maxSlew=0; peak=0; output=[];
+maxGain=1.625; maxStep=maxGain/round(.04*fs);
 for B=[256 1024]
-    gain=Phase4MasterGain(fs,65); current=1.25*(.65)^2; previous=current;
+    gain=Phase4MasterGain(fs,65); current=maxGain*(.65)^2; previous=current;
     percent=[0 100 25 90 0 0 0 0 0 0 0 0 100 100 100 100 100 100 100 100];
     for k=1:numel(percent)
-        gain.setPercent(percent(k)); target=1.25*(percent(k)/100)^2;
+        gain.setPercent(percent(k)); target=maxGain*(percent(k)/100)^2;
         t=((k-1)*B+(0:B-1))'/fs;
         x=[.49*sin(2*pi*440*t),.31*cos(2*pi*630*t)];
         [y,envelope]=gain.step(x); reference=zeros(B,1);
         for n=1:B
-            current=current+sign(target-current)*min(1.25/round(.04*fs),abs(target-current));
+            current=current+sign(target-current)*min(maxStep,abs(target-current));
             reference(n)=current;
         end
         error=max(error,max(abs(y-x.*reference),[],'all'));
         maxSlew=max(maxSlew,max(abs(diff([previous;envelope])))); previous=envelope(end);
-        assert(all(envelope>=0 & envelope<=1.25) && all(isfinite(y),'all') && size(y,2)==2);
+        assert(all(envelope>=0 & envelope<=maxGain) && all(isfinite(y),'all') && size(y,2)==2);
         peak=max(peak,max(abs(y),[],'all'));
         if B==1024, output=[output;y]; end %#ok<AGROW>
     end
-    assert(gain.current==1.25);
+    assert(gain.current==maxGain);
 end
-assert(error<1e-12 && maxSlew<=1.25/1764+1e-14 && peak<.625);
+assert(error<1e-12 && maxSlew<=maxStep+1e-14 && peak<.8125);
 audiowrite(fullfile(outputDir,'master_sweep.wav'),output,fs,'BitsPerSample',24);
 result=struct('complete',true,'version',version,'geometry_radius',1,'directions',[-80 80], ...
     'all_four_independent',all(eventCount>0),'overlap_selection',true,'slider_sync',true, ...
     'background_noop',true,'axes_locked',true,'master_reference_error',error, ...
-    'max_gain_step',maxSlew,'gain_step_bound',1.25/1764,'peak',peak,'sample_rate',fs, ...
+    'max_gain_step',maxSlew,'gain_step_bound',maxStep,'peak',peak,'sample_rate',fs, ...
     'channels',2,'channel_order','left,right','frames',size(output,1), ...
     'duration_seconds',size(output,1)/fs,'all_samples_finite',all(isfinite(output),'all'), ...
-    'clipped_samples',nnz(abs(output)>=1),'gain_mapping','1.25*(percent/100)^2', ...
+    'clipped_samples',nnz(abs(output)>=1),'gain_mapping','1.625*(percent/100)^2', ...
     'scope','Deterministic callbacks and signal checks; physical mouse/device validated separately.');
 fid=fopen(fullfile(outputDir,'validation.json'),'w'); fprintf(fid,'%s',jsonencode(result,PrettyPrint=true)); fclose(fid);
 fprintf('PHASE4_STUDIO_VALIDATION_PASS gain_error=%.3g peak=%.4f\n',error,peak);
