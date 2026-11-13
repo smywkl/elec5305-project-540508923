@@ -65,4 +65,4 @@ Omit `Device` to use the Windows default for that driver. If import fails, check
 
 - MUSDB18-HQ is supplied separately. The repository also excludes SOFA files, model weights, stem caches and input audio. Reproducing some experiments requires these local assets and matching runtime dependencies. [Data layout](../data/README.md)
 - Some historical Open-Unmix checkpoints are unavailable. The saved figures, small result files and technical notes above support inspection of the reported comparisons. The complete experiment suite requires more than the public checkout. [Final audit](final_audit/repository_cleanup_and_audit.md)
-- The demonstration video is intended to show the application running on the tested setup. See the [submission links](../README.md#for-reviewers) for its status.
+- The demonstration video shows the application running on the tested setup and is submitted directly through Canvas.

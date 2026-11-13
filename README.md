@@ -6,7 +6,7 @@
 - [Representative results](docs/REVIEWER_GUIDE.md#key-experimental-results)
 - [Spatial Studio launch steps](docs/REVIEWER_GUIDE.md#how-to-run-spatial-studio)
 - **Final Report** — public link pending.
-- **Demonstration Video** — link pending.
+- **Demonstration Video** — submitted directly through Canvas.
 
 This ELEC5305 semester project investigates how deep-learning source separation can support a dynamic binaural music renderer for ordinary stereo recordings. The final system concept separates a song into vocals, drums, bass and other stems, renders each stem with an HRTF, and combines the results into a headphone-ready binaural mix.
 
