@@ -1,0 +1,8 @@
+experiment,model,status,macro_si_sdr_db,notes
+"A_best_si_sdr","Open-Unmix V3 checkpoint combination","historical","6.307980324595707","best-SI-SDR checkpoint combination"
+"B_best_validation","Open-Unmix V3 checkpoint combination","historical","6.296862136976220","best-validation checkpoint combination"
+"C_pretrained","official pretrained UMXHQ","baseline","6.279342981043796","untouched UMXHQ"
+"D_clean","conservative Open-Unmix hybrid","retained_best_openunmix","6.3369339978254695","best Open-Unmix Phase 1 baseline"
+"E_pretrained_HTDemucs","official pretrained htdemucs","retained_standard_baseline","9.247064495155069","standard HTDemucs baseline"
+"F_vocal_ft_sanity","official vocal-specific HTDemucs-FT","sanity_only","","single-song vocals-only sanity; not a model-selection candidate"
+"G_pretrained_HTDemucs_FT","official pretrained htdemucs_ft","final","9.792015744652476","final separator; G-E=+0.5449512494974069 dB; G>E on 9/10 songs"

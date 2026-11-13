@@ -1,5 +1,13 @@
 # Deep Learning-Assisted Dynamic Binaural Music Spatialisation
 
+## For Reviewers
+
+- [Reviewer Guide](docs/REVIEWER_GUIDE.md) — Phase 1–4 code, documentation and evidence.
+- [Representative results](docs/REVIEWER_GUIDE.md#key-experimental-results)
+- [Spatial Studio launch steps](docs/REVIEWER_GUIDE.md#how-to-run-spatial-studio)
+- **Final Report** — public link pending.
+- **Demonstration Video** — link pending.
+
 This ELEC5305 semester project investigates how deep-learning source separation can support a dynamic binaural music renderer for ordinary stereo recordings. The final system concept separates a song into vocals, drums, bass and other stems, renders each stem with an HRTF, and combines the results into a headphone-ready binaural mix.
 
 The repository contains the completed source-separation study, fixed-HRTF mechanism study, three-subject robustness extension, and MATLAB Spatial Studio through Phase 4.3c. Spatial Studio imports WAV/MP3, reuses validated HTDemucs-FT caches, controls four binaural sources in real time and exports a static full-song WAV. The scientific studies and the application's listening gain/export policies remain separate.

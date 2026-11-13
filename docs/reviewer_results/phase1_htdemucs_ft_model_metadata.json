@@ -1,0 +1,24 @@
+{
+  "model_configuration": {
+    "revision": "d74ac89c3a1e874fc78f152555cf4d8533f06cd4",
+    "official_definition_sha256": "69470b8c1bbd674437b51bc9fb491327a10ab0396b702c93389b9cf750016346",
+    "models": [
+      {
+        "identifier": "f7e0c4bc",
+        "sha256": "2c85ab3c62dd6edd8e0b965e38b16fd1cdde357cc25de6b6bc9ce7c83f60925f"
+      },
+      {
+        "identifier": "d12395a8",
+        "sha256": "5b01a97567ae9a3178a6236fb520251045c03eb8834bc8c24a4eec11d6c8fb56"
+      },
+      {
+        "identifier": "92cfc3b6",
+        "sha256": "a241863551f30d01c42bd7b97da40839922ead3acb0f1fcab25682f55b4eeb59"
+      },
+      {
+        "identifier": "04573f0d",
+        "sha256": "68854b0d7c2b3274723b5761f6fd9f5aec5f1bcd3f0de7c1669546fdb7871b7c"
+      }
+    ]
+  }
+}
